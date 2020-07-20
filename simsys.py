@@ -38,7 +38,7 @@ class system():
     def addClock( 
         self,
         period = 20,    # 20ns, 50MHz
-        width  = 10,     # symetrical clock
+        width  = 10,    # symetrical clock
         phase  = 0,     # 0ns, in phase
         name   = None): # None, generic name
 
@@ -55,6 +55,29 @@ class system():
         # create
         self.devicelist[name] = \
             clock(period, width, phase, name)
+
+        # done
+        return
+
+    # time units are in ns (float) 
+    def addCounter( 
+        self,
+        size = 4,     # 4, half a byte
+        name = None): # None, generic name
+
+        # get generic counter name
+        if not name:
+            # find a new name
+            n, k = 0, "cnt0"
+            while k in self.devicelist.keys():
+                n += 1
+                k = f"cnt{n}"
+            # found name
+            name = k
+
+        # create
+        self.devicelist[name] = \
+            counter(size, name)
 
         # done
         return
@@ -121,10 +144,11 @@ class port():
 
     def set(self, value):
         if not isinstance(value, str):
-            print("port.set: value must be of string type.")
+            print(f"port.set: value must be of string type.")
+            print(f"  exiting...")
             exit()
         if not len(value) == len(self.value):
-            print("port.set: value size mismatch:")
+            print(f"port.set: value size mismatch:")
             print(f"  value size is {len(value)}.")
             print(f"  expected size is {len(self.value)}.")
             print(f"  exiting...")
@@ -134,6 +158,59 @@ class port():
 
     def size(self):
         return len(self.value)
+
+class counter():
+
+    # activated when input connected
+    clr = None # clear   (reset)
+    trg = None # trigger (clock)
+    wrt = None # write   (load)
+    ena = None # enable  (output)
+    cse = None # chip select
+
+    def __init__(
+        self,
+        size,   # counter bits width 
+        name):  # counter name
+        # record
+        self.name = name
+        self.configuration = size
+        self.Q = port(size)
+        return
+
+    def makeModule(self, fh, n, t):
+        # get data
+        name = self.name
+        size = self.configuration
+        tab  = '\t'*(t+1)
+        ide  = f"{name}_Q[{size-1}:0]"
+        # write module
+        fh.write(f"{tab}$scope module {name} $end\n")
+        fh.write(f"{tab}\t$var wire {size} W{n} {ide} $end\n")
+        fh.write(f"{tab}$upscope $end\n")
+        # record signal reference (VCD)
+        self.signal = f"W{n}"
+        return n+1
+
+    def getState(self):
+        size = self.configuration
+        if size == 1: return f"{self.Q.get()}{self.signal}\n"
+        return f"b{self.Q.get()} {self.signal}\n"
+
+    def display(self):
+        # get data
+        name = self.name
+        size = self.configuration
+        value = self.Q.get()
+        # display
+        print(f"CNT: {name},{size},{value}")
+        return
+
+    # def updateInPorts(self):
+    #     return
+
+    def updateState(self, timeStamp):
+        return ""
 
 class clock():
 
@@ -200,8 +277,7 @@ if __name__ == "__main__":
 
     s = system("version 0.00")
     s.addClock()
-    s.addClock(phase = 2)
-    s.addClock(phase = 4)
+    s.addCounter()
     s.displayDevices()
     s.openFile()
     s.runUntil(100)
