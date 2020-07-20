@@ -20,6 +20,7 @@
 # run system engine and record data
 
 from time import strftime 
+from sys import exit
 
 class system():
 
@@ -92,8 +93,7 @@ class system():
         return
 
     def updateDevices(self):
-        # increase time interval
-        # in units of 1ns
+        # increase time interval in units of 1ns
         self.time += 1
         # check for a signal change
         change = ""        
@@ -110,6 +110,31 @@ class system():
             self.updateDevices()
         return
 
+class port():
+
+    def __init__(self, bits = 1):
+        self.value = 'U'*bits
+        return
+
+    def get(self):
+        return self.value
+
+    def set(self, value):
+        if not isinstance(value, str):
+            print("port.set: value must be of string type.")
+            exit()
+        if not len(value) == len(self.value):
+            print("port.set: value size mismatch:")
+            print(f"  value size is {len(value)}.")
+            print(f"  expected size is {len(self.value)}.")
+            print(f"  exiting...")
+            exit()
+        self.value = value
+        return
+
+    def size(self):
+        return len(self.value)
+
 class clock():
 
     def __init__(
@@ -121,7 +146,7 @@ class clock():
         # record
         self.name = name
         self.configuration = period, width, phase
-        self.state = 'U'
+        self.port = port(1)
         # done
         return
 
@@ -138,15 +163,15 @@ class clock():
         return n+1
 
     def getState(self):
-        return f"{self.state}{self.signal}\n"
+        return f"{self.port.get()}{self.signal}\n"
 
     def display(self):
         # get data
         name = self.name
         period, width, phase = self.configuration
-        state = self.state
+        value = self.port.get()
         # display
-        print(f"CLK: {name},{period},{width},{phase},{state}")
+        print(f"CLK: {name},{period},{width},{phase},{value}")
         return
 
     def updateState(self, timeStamp):
@@ -156,9 +181,9 @@ class clock():
         m = (timeStamp-phase) % period
         s = ['0','1'][m < width]
         # continue
-        if self.state == s: return ""
+        if self.port.get() == s: return ""
         # update
-        self.state = s        
+        self.port.set(s)        
         # done
         return self.getState()
 
