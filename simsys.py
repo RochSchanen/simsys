@@ -23,23 +23,21 @@ from time import strftime
 
 class system():
 
-    name = None
-    date = None
-    devicelist = {}
-
     def __init__(self, name):
         date = strftime("%A, %d %b %Y at %H:%M:%S")
         print(f"create system {name}\n{date}")
-        # done
+        self.devicelist = {}
         self.name = name
         self.date = date
+        self.time = 0
+        # done
         return
 
     # time units are in ns (float) 
     def addClock( 
         self,
-        period = 10,    # 10ns, 100MHz
-        width  = 5,     # symetrical clock
+        period = 20,    # 20ns, 50MHz
+        width  = 10,     # symetrical clock
         phase  = 0,     # 0ns, in phase
         name   = None): # None, generic name
 
@@ -83,7 +81,7 @@ class system():
         # set initial values at time zero
         fh.write(f"#0\n")
         for d in self.devicelist.values():
-            d.writeState(fh)
+            fh.write(d.getState())
         # done
         self.pathName = pathName
         self.fh = fh
@@ -93,8 +91,24 @@ class system():
         self.fh.close()
         return
 
-    # def run(self):
-    #     return
+    def updateDevices(self):
+        # increase time interval
+        # in units of 1ns
+        self.time += 1
+        # check for a signal change
+        change = ""        
+        for d in self.devicelist.values():
+            change += d.updateState(self.time)
+        # export if any change occured
+        if change:
+            self.fh.write(f"#{self.time}\n")
+            self.fh.write(change)
+        return
+
+    def runUntil(self, time):
+        while self.time < time:
+            self.updateDevices()
+        return
 
 class clock():
 
@@ -104,10 +118,11 @@ class clock():
         width,  # pulse width  (float time)
         phase,  # phase shift  (float time)
         name):  # clock name
-        # done
+        # record
         self.name = name
         self.configuration = period, width, phase
-        self.state = 0                
+        self.state = 'U'
+        # done
         return
 
     def makeModule(self, fh, n, t):
@@ -122,9 +137,8 @@ class clock():
         self.signal = f"W{n}"
         return n+1
 
-    def writeState(self, fh):
-        fh.write(f"{self.state} {self.signal}\n")
-        return
+    def getState(self):
+        return f"{self.state}{self.signal}\n"
 
     def display(self):
         # get data
@@ -135,8 +149,18 @@ class clock():
         print(f"CLK: {name},{period},{width},{phase},{state}")
         return
 
-    # def update(self):
-    #     pass
+    def updateState(self, timeStamp):
+        # get configuration
+        period, width, phase = self.configuration
+        # get new state
+        m = (timeStamp-phase) % period
+        s = ['0','1'][m < width]
+        # continue
+        if self.state == s: return ""
+        # update
+        self.state = s        
+        # done
+        return self.getState()
 
 if __name__ == "__main__":
 
@@ -151,9 +175,9 @@ if __name__ == "__main__":
 
     s = system("version 0.00")
     s.addClock()
-    s.addClock()
-    s.addClock()
+    s.addClock(phase = 2)
+    s.addClock(phase = 4)
     s.displayDevices()
     s.openFile()
-    # s.run()
+    s.runUntil(100)
     s.closeFile()
