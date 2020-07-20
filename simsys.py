@@ -57,7 +57,7 @@ class system():
             clock(period, width, phase, name)
 
         # done
-        return
+        return self.devicelist[name]
 
     # time units are in ns (float) 
     def addCounter( 
@@ -80,7 +80,7 @@ class system():
             counter(size, name)
 
         # done
-        return
+        return self.devicelist[name]
 
     def displayDevices(self):
         for d in self.devicelist.values(): d.display()            
@@ -118,10 +118,13 @@ class system():
     def updateDevices(self):
         # increase time interval in units of 1ns
         self.time += 1
+        # update device inputs
+        for d in self.devicelist.values():
+            d.updateInputPorts()        
         # check for a signal change
         change = ""        
         for d in self.devicelist.values():
-            change += d.updateState(self.time)
+            change += d.updateOutputPorts(self.time)
         # export if any change occured
         if change:
             self.fh.write(f"#{self.time}\n")
@@ -172,10 +175,12 @@ class counter():
         self,
         size,   # counter bits width 
         name):  # counter name
-        # record
+        # record data
         self.name = name
         self.configuration = size
         self.Q = port(size)
+        # reset counter now
+        self.Q.set("0000")
         return
 
     def makeModule(self, fh, n, t):
@@ -206,10 +211,37 @@ class counter():
         print(f"CNT: {name},{size},{value}")
         return
 
-    # def updateInPorts(self):
-    #     return
+    def addTrigger(self, inputPort):
+        self.trg = inputPort
+        self.trgState = inputPort.get()
+        self.rising = False
+        return
 
-    def updateState(self, timeStamp):
+    def updateInputPorts(self):
+        # detect trigger rising edge
+        if self.trg:
+            # next value
+            n = self.trg.get()
+            # detect rising edge
+            if (self.trgState, n) == ('0','1'):
+                # set flag
+                self.rising = True
+            # update state
+            self.trgState = n
+        #done
+        return
+
+    def updateOutputPorts(self, timeStamp):
+        # update on rising edge
+        if self.rising:
+            # increment current value
+            n = int(self.Q.get(),2)+1
+            self.Q.set(f'{n:04b}'[-4:])
+            # clear flag
+            self.rising = False
+            # return change
+            return self.getState()
+        # no change
         return ""
 
 class clock():
@@ -220,7 +252,7 @@ class clock():
         width,  # pulse width  (float time)
         phase,  # phase shift  (float time)
         name):  # clock name
-        # record
+        # record data
         self.name = name
         self.configuration = period, width, phase
         self.port = port(1)
@@ -251,7 +283,10 @@ class clock():
         print(f"CLK: {name},{period},{width},{phase},{value}")
         return
 
-    def updateState(self, timeStamp):
+    def updateInputPorts(self):
+        pass
+
+    def updateOutputPorts(self, timeStamp):
         # get configuration
         period, width, phase = self.configuration
         # get new state
@@ -275,10 +310,18 @@ if __name__ == "__main__":
     print("comment: system architecture simulator")
     print("run Python3:" + sys.version);
 
+    # instanciate simulator
     s = system("version 0.00")
-    s.addClock()
-    s.addCounter()
+    # instanciate clock
+    c = s.addClock()
+    # instanciate counter
+    n = s.addCounter()
+    n.addTrigger(c.port)
+    # show devices
     s.displayDevices()
+    # open export file
     s.openFile()
-    s.runUntil(100)
+    # run simulator
+    s.runUntil(500)
+    # close export file
     s.closeFile()
