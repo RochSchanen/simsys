@@ -108,7 +108,7 @@ class system():
         # set initial values at time zero
         fh.write(f"#0\n")
         for d in self.devicelist.values():
-            fh.write(d.getState())
+            fh.write(d.export())
         # done
         self.pathName = pathName
         self.fh = fh
@@ -124,11 +124,11 @@ class system():
         # update device inputs
         for d in self.devicelist.values():
             d.updateInputPorts()        
-        # check for a signal change
+        # update device outputs
         change = ""        
         for d in self.devicelist.values():
             change += d.updateOutputPorts(self.time)
-        # export if any change occured
+        # export
         if change:
             self.fh.write(f"#{self.time}\n")
             self.fh.write(change)
@@ -144,25 +144,46 @@ class system():
 class outPort():
 
     def __init__(self, bits = 1):
+        # so far, default is undefined value 'U'
         self.value = 'U'*bits
+        # self.signal = None
         return
 
     def get(self):
         return self.value
 
     def set(self, value):
+        # check type is string 
         if not isinstance(value, str):
             print(f"port.set: value must be of string type.")
             print(f"  exiting...")
             exit()
+        # check size
         if not len(value) == len(self.value):
             print(f"port.set: value size mismatch:")
             print(f"  value size is {len(value)}.")
             print(f"  expected size is {len(self.value)}.")
             print(f"  exiting...")
             exit()
+        # update
         self.value = value
+        # done
         return
+
+    def addSignal(self, n):
+        self.signal = f"O{n}"
+        return self.signal
+
+    # export to VCD format
+    def export(self):
+        if self.signal:
+            # export bit string
+            if self.size() > 1:
+                return f"b{self.value} {self.signal}\n"
+            # export single bit
+            return f"{self.value}{self.signal}\n"
+        # no signal
+        return ""
 
     def size(self):
         return len(self.value)
@@ -175,17 +196,17 @@ class inPort():
         # linking (network)
         self.p = port
         # initial state
-        self.s = port.get()
+        self.state = port.get()
         # self.rising  = False
         # self.falling = False
         return
 
     def update(self):
         if self.p.size() > 1:
-            self.s = self.p.get()
+            self.state = self.p.get()
             return
         # single bit transition        
-        s, p = self.s, self.p.get()
+        s, p = self.state, self.p.get()
         # clear previous edges
         self.rising  = False
         self.falling = False
@@ -196,8 +217,12 @@ class inPort():
         if (s, p) == ('1','0'):
             self.falling = True
         # update state
-        self.s = p                 
+        self.state = p                 
         return
+
+    def addSignal(self, n):
+        self.signal = f"I{n}"
+        return self.signal
 
 # COUNTER #################################################
 
@@ -235,20 +260,20 @@ class counter():
         # get data
         name = self.name
         size = self.configuration
+        # make tab for alignment
         tab  = '\t'*(t+1)
-        ide  = f"{name}_Q[{size-1}:0]"
+        # make signal label
+        label  = f"{name}_Q[{size-1}:0]"
+        # register port for export (VCD)
+        signal = self.Q.addSignal(n)
         # write module
         fh.write(f"{tab}$scope module {name} $end\n")
-        fh.write(f"{tab}\t$var wire {size} W{n} {ide} $end\n")
+        fh.write(f"{tab}\t$var wire {size} {signal} {label} $end\n")
         fh.write(f"{tab}$upscope $end\n")
-        # record signal reference (VCD)
-        self.signal = f"W{n}"
         return n+1
 
-    def getState(self):
-        size = self.configuration
-        if size == 1: return f"{self.Q.get()}{self.signal}\n"
-        return f"b{self.Q.get()} {self.signal}\n"
+    def export(self):
+        return self.Q.export() 
 
     def display(self):
         # get data
@@ -263,39 +288,44 @@ class counter():
         self.trg = inPort(port)
         return
 
-    def addClear(self, inputPort):
-        self.clr = inputPort
-        self.clrState = inputPort
+    def addClear(self, port):
+        self.clr = inPort(port)
         return
 
     def updateInputPorts(self):
-        # update trigger
-        if self.trg: self.trg.update()
-        # update clear
-        if self.clr: 
-            self.clrState = self.clr.get()
-        #done
+        for p in [
+            self.clr,   # clear 
+            self.trg]:  # trigger
+            if p: p.update()
         return
 
     def updateOutputPorts(self, timeStamp):
+
         # get configuration
         size = self.configuration
+
         # asynchronous clear on active low
-        if self.clrState == '0':
+        if self.clr.state == '0':
+            # make zero string
             zero = f'{0:0{size}b}'
-            if self.Q.get() == zero:
-                return ""
+            # no change
+            if self.Q.get() == zero: return ""
+            # clear ouputs
             self.Q.set(zero)
-            return self.getState()
-        # update on rising edge
+            # export
+            return self.export()
+
+        # update on rising edge of trigger
         if self.trg.rising:
             # increment current value
-            n = int(self.Q.get(),2)+1
-            # update output port
-            # (note: cutoff to Least Significant Bits only)
-            self.Q.set(f'{n:0{size}b}'[-size:])
-            # return change
-            return self.getState()
+            n = int(self.Q.get(), 2) + 1
+            # make n string, LSB(size) only
+            ns = f'{n:0{size}b}'[-size:]
+            # update outputs
+            self.Q.set(ns)
+            # export
+            return self.export()
+
         # no change
         return ""
 
@@ -312,30 +342,33 @@ class clock():
         # record data
         self.name = name
         self.configuration = period, width, phase
-        self.port = outPort(1)
+        self.Q = outPort(1)
         # done
         return
 
     def makeModule(self, fh, n, t):
         # get data
         name = self.name
+        # make tab for alignment
         tab  = '\t'*(t+1)
-        # write module
+        # make signal label
+        label = f"{name}_Q"
+        # register port for export (VCD)
+        signal = self.Q.addSignal(n)
+        # write module content
         fh.write(f"{tab}$scope module {name} $end\n")
-        fh.write(f"{tab}\t$var wire 1 W{n} {name}_CLK $end\n")
+        fh.write(f"{tab}\t$var wire 1 {signal} {label} $end\n")
         fh.write(f"{tab}$upscope $end\n")
-        # record signal reference (VCD)
-        self.signal = f"W{n}"
         return n+1
 
-    def getState(self):
-        return f"{self.port.get()}{self.signal}\n"
+    def export(self):
+        return self.Q.export()
 
     def display(self):
         # get data
         name = self.name
         period, width, phase = self.configuration
-        value = self.port.get()
+        value = self.Q.get()
         # display
         print(f"CLK: {name},{period},{width},{phase},{value}")
         return
@@ -349,12 +382,12 @@ class clock():
         # get new state
         m = (timeStamp-phase) % period
         s = ['0','1'][m < width]
-        # continue
-        if self.port.get() == s: return ""
-        # update
-        self.port.set(s)        
-        # done
-        return self.getState()
+        # no change
+        if self.Q.get() == s: return ""
+        # update output
+        self.Q.set(s)        
+        # export
+        return self.export()
 
 # BUILD ###################################################
 
@@ -379,7 +412,7 @@ if __name__ == "__main__":
     # instanciate a counter
     myCounter = mySystem.addCounter()
     # make counter inputs network
-    myCounter.addTrigger(myclock.port)
+    myCounter.addTrigger(myclock.Q)
     myCounter.addClear(myResetButton)
     # show all devices
     mySystem.displayDevices()
