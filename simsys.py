@@ -19,6 +19,7 @@
 # collect every device in the system
 # run system engine and record data
 
+from numpy.random import randint as rnd
 from time import strftime 
 from sys import exit
 
@@ -162,6 +163,15 @@ class port():
     def size(self):
         return len(self.value)
 
+# todo: counter options
+# clr on active low, high
+# trg on rising, falling edge
+# wrt on active low, high
+# ena on active low, high
+# cse on active low, high
+# initial value random, zero, maybe undefined
+# maybe parallel, serial load
+
 class counter():
 
     # activated when input connected
@@ -179,8 +189,8 @@ class counter():
         self.name = name
         self.configuration = size
         self.Q = port(size)
-        # reset counter now
-        self.Q.set("0000")
+        # setup port with a random value
+        self.Q.set(f'{rnd(size):0{size}b}')
         return
 
     def makeModule(self, fh, n, t):
@@ -217,6 +227,11 @@ class counter():
         self.rising = False
         return
 
+    def addClear(self, inputPort):
+        self.clr = inputPort
+        self.clrState = inputPort
+        return
+
     def updateInputPorts(self):
         # detect trigger rising edge
         if self.trg:
@@ -228,15 +243,29 @@ class counter():
                 self.rising = True
             # update state
             self.trgState = n
+        # update clear
+        if self.clr: 
+            self.clrState = self.clr.get()
         #done
         return
 
     def updateOutputPorts(self, timeStamp):
+        # get configuration
+        size = self.configuration
+        # asynchronous clear on active low
+        if self.clrState == '0':
+            zero = f'{0:0{size}b}'
+            if self.Q.get() == zero:
+                return ""
+            self.Q.set(zero)
+            return self.getState()
         # update on rising edge
         if self.rising:
             # increment current value
             n = int(self.Q.get(),2)+1
-            self.Q.set(f'{n:04b}'[-4:])
+            # update output port
+            # (keep Least Significant Bits only)
+            self.Q.set(f'{n:0{size}b}'[-size:])
             # clear flag
             self.rising = False
             # return change
@@ -311,17 +340,29 @@ if __name__ == "__main__":
     print("run Python3:" + sys.version);
 
     # instanciate simulator
-    s = system("version 0.00")
-    # instanciate clock
-    c = s.addClock()
-    # instanciate counter
-    n = s.addCounter()
-    n.addTrigger(c.port)
-    # show devices
-    s.displayDevices()
+    mySystem = system("version 0.00")
+    # instanciate a port of size 1:
+    # add a button key to show on the waves 
+    myResetButton = port(1)
+    # instanciate a clock
+    myclock = mySystem.addClock()
+    # instanciate a counter
+    myCounter = mySystem.addCounter()
+    # make counter inputs network
+    myCounter.addTrigger(myclock.port)
+    myCounter.addClear(myResetButton)
+    # show all devices
+    mySystem.displayDevices()
     # open export file
-    s.openFile()
-    # run simulator
-    s.runUntil(500)
+    mySystem.openFile()
+    # run simulator    
+    myResetButton.set('0')
+    mySystem.runUntil(15)
+    myResetButton.set('1')
+    mySystem.runUntil(1000)
     # close export file
-    s.closeFile()
+    mySystem.closeFile()
+
+
+
+
