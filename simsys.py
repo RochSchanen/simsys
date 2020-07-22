@@ -23,6 +23,8 @@ from numpy.random import randint as rnd
 from time import strftime 
 from sys import exit
 
+# SYSTEM / MODULE #########################################
+
 class system():
 
     def __init__(self, name):
@@ -137,7 +139,9 @@ class system():
             self.updateDevices()
         return
 
-class port():
+# OUTPUT PORTS ############################################
+
+class outPort():
 
     def __init__(self, bits = 1):
         self.value = 'U'*bits
@@ -162,6 +166,40 @@ class port():
 
     def size(self):
         return len(self.value)
+
+# INPUT PORTS #############################################
+
+class inPort():
+
+    def __init__(self, port):
+        # linking (network)
+        self.p = port
+        # initial state
+        self.s = port.get()
+        # self.rising  = False
+        # self.falling = False
+        return
+
+    def update(self):
+        if self.p.size() > 1:
+            self.s = self.p.get()
+            return
+        # single bit transition        
+        s, p = self.s, self.p.get()
+        # clear previous edges
+        self.rising  = False
+        self.falling = False
+        # detect rising edge
+        if (s, p) == ('0','1'):
+            self.rising = True                 
+        # detect falling edge
+        if (s, p) == ('1','0'):
+            self.falling = True
+        # update state
+        self.s = p                 
+        return
+
+# COUNTER #################################################
 
 # todo: counter options
 # clr on active low, high
@@ -188,7 +226,7 @@ class counter():
         # record data
         self.name = name
         self.configuration = size
-        self.Q = port(size)
+        self.Q = outPort(size)
         # setup port with a random value
         self.Q.set(f'{rnd(size):0{size}b}')
         return
@@ -221,10 +259,8 @@ class counter():
         print(f"CNT: {name},{size},{value}")
         return
 
-    def addTrigger(self, inputPort):
-        self.trg = inputPort
-        self.trgState = inputPort.get()
-        self.rising = False
+    def addTrigger(self, port):
+        self.trg = inPort(port)
         return
 
     def addClear(self, inputPort):
@@ -233,16 +269,8 @@ class counter():
         return
 
     def updateInputPorts(self):
-        # detect trigger rising edge
-        if self.trg:
-            # next value
-            n = self.trg.get()
-            # detect rising edge
-            if (self.trgState, n) == ('0','1'):
-                # set flag
-                self.rising = True
-            # update state
-            self.trgState = n
+        # update trigger
+        if self.trg: self.trg.update()
         # update clear
         if self.clr: 
             self.clrState = self.clr.get()
@@ -260,18 +288,18 @@ class counter():
             self.Q.set(zero)
             return self.getState()
         # update on rising edge
-        if self.rising:
+        if self.trg.rising:
             # increment current value
             n = int(self.Q.get(),2)+1
             # update output port
-            # (keep Least Significant Bits only)
+            # (note: cutoff to Least Significant Bits only)
             self.Q.set(f'{n:0{size}b}'[-size:])
-            # clear flag
-            self.rising = False
             # return change
             return self.getState()
         # no change
         return ""
+
+# CLOCK ###################################################
 
 class clock():
 
@@ -284,7 +312,7 @@ class clock():
         # record data
         self.name = name
         self.configuration = period, width, phase
-        self.port = port(1)
+        self.port = outPort(1)
         # done
         return
 
@@ -328,6 +356,8 @@ class clock():
         # done
         return self.getState()
 
+# BUILD ###################################################
+
 if __name__ == "__main__":
 
     import sys
@@ -343,7 +373,7 @@ if __name__ == "__main__":
     mySystem = system("version 0.00")
     # instanciate a port of size 1:
     # add a button key to show on the waves 
-    myResetButton = port(1)
+    myResetButton = outPort(1)
     # instanciate a clock
     myclock = mySystem.addClock()
     # instanciate a counter
@@ -362,7 +392,3 @@ if __name__ == "__main__":
     mySystem.runUntil(1000)
     # close export file
     mySystem.closeFile()
-
-
-
-
