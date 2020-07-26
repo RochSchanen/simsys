@@ -155,6 +155,27 @@ class system():
         return self.devicelist[name]
 
 
+    # (specific)
+    # time units are in ns (float) 
+    def addSystemClear( 
+        self,
+        length = 1,   # 1, one cycle
+        name = None): # None, generic name
+        # check duplicate
+        if name in self.devicelist.keys():
+            print(f"system.addClock: clock name duplicate.")
+            print(f"  name {name} already used.")
+            print(f"  exiting...")
+            exit()
+        # get generic counter name
+        if not name: name = self.getName("scl")
+        # create
+        self.devicelist[name] = \
+            sysClear(length, name)
+        # done
+        return self.devicelist[name]
+
+
 # PORT COMMON #############################################
 
 class portCommon():
@@ -354,8 +375,7 @@ class counter(Device):
             name):  # counter name
         # call parent class constructor
         Device.__init__(self, name)
-        # record data
-        self.name = name
+        # record configuration
         self.configuration = size
         # instanciate output port
         self.Q = outPort(size, "Q")
@@ -421,22 +441,24 @@ class clock(Device):
             name):  # clock name
         # call parent class constructor
         Device.__init__(self, name)
-        # record data
-        self.name = name
+        # record configuration
         self.configuration = period, width, phase
-        # instanciate output port
+        # instanciate output ports
+        self.P = outPort(1, "P")
         self.Q = outPort(1, "Q")
         # register port
+        self.outports.append(self.P)
         self.outports.append(self.Q)
-        # setup output port high
-        self.Q.set('1')
+        # set default output ports value
+        self.P.set('1')
+        self.Q.set('0')
         # done
         return
 
     def display(self):
         name = self.name
         period, width, phase = self.configuration
-        value = self.Q.get()
+        value = f"{self.P.get()},{self.Q.get()}"
         # display
         print(f"CLK: {name},{period},{width},{phase},{value}")
         return
@@ -446,9 +468,47 @@ class clock(Device):
         period, width, phase = self.configuration
         # get new state
         m = (timeStamp-phase) % period
-        newvalue = ['0','1'][m < width]
+        # update ouputs
+        self.P.set(['0','1'][m < width])
+        self.Q.set(['1','0'][m < width])
+        # done
+        return
+
+# SYSTEM CLEAR ############################################
+
+class sysClear(Device):
+
+    def __init__(self,
+            length, # clear delay length
+            name):  # device name
+        # call parent class constructor
+        Device.__init__(self, name)
+        # record configuration
+        self.configuration = length
+        # instanciate output port
+        self.Q = outPort(1, "Q")
+        # register port
+        self.outports.append(self.Q)
+        # set default output ports value
+        self.Q.set('0')
+        # done
+        return
+
+    def display(self):
+        name = self.name
+        length = self.configuration
+        value = f"{self.Q.get()}"
+        # display
+        print(f"SCL: {name},{length},{value}")
+        return
+
+    def updateOutputPorts(self, timeStamp):
+        # get configuration
+        length = self.configuration
+        # compute output
+        value = ['1','0'][timeStamp < length]
         # update output
-        self.Q.set(newvalue)        
+        self.Q.set(value)
         # done
         return
 
@@ -467,9 +527,9 @@ if __name__ == "__main__":
 
     # instanciate simulator
     mySystem = system("version 0.00")
-    # instanciate a port of size 1:
-    # add a button key to show on the waves 
-    myResetButton = outPort(1)
+    
+    # add system clear
+    mysysclear = mySystem.addSystemClear(5)
 
     # instanciate a clock
     myclock = mySystem.addClock()
@@ -479,7 +539,7 @@ if __name__ == "__main__":
     
     # make counter inputs network
     myCounter.addTrigger(myclock.Q)
-    myCounter.addClear(myResetButton)
+    myCounter.addClear(mysysclear.Q)
     
     # show all devices
     mySystem.displayDevices()
@@ -488,9 +548,6 @@ if __name__ == "__main__":
     mySystem.openFile()
     
     # run simulator    
-    myResetButton.set('0')
-    mySystem.runUntil(15)
-    myResetButton.set('1')
     mySystem.runUntil(250)
     
     # close export file
