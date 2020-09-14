@@ -29,6 +29,10 @@ SEP = " "    # SIGNAL SEPARATOR
 EOL = "\n"   # END-OF-LINE CODE
 
 # SIGNAL COUNTER
+# the signal counter is used for the VCD file wire names.
+# they are all given the format 'Wn' where 'W' is the letter W
+# and 'n' is an index number. The value of n is given by the
+# counter 'N'.
 
 N = 0
 
@@ -48,6 +52,9 @@ class system():
         return
 
     # (generic)
+    # getName returns a name in the form 'Sn' where the string S
+    # is a given generic name and 'n' is an index number. The index  
+    # is incremented with every new call.
     def getName(self, generic):
         n, k = 0, f"{generic}0"
         while k in self.devicelist.keys():
@@ -62,6 +69,7 @@ class system():
         return
 
     # (generic)
+    # create a new VCD file and make the file header. 
     def openFile(self, pathName = "./output.vcd"):
         # create file
         fh = open(pathName, 'w')
@@ -86,6 +94,8 @@ class system():
         return
 
     # (generic)
+    # generate a new step in the simulation
+    # the step resolution is so far set to 1ns
     def runStep(self):
         # export new state
         exportResult = ""
@@ -95,7 +105,7 @@ class system():
         if exportResult:
             self.fh.write(f"#{self.time}")
             self.fh.write(f"{SEP}{exportResult}{EOL}")
-        # increase time by step interval [ns]
+        # increase time by one interval (1ns)
         self.time += 1
         # update device outputs
         for device in self.devicelist.values():
@@ -107,27 +117,34 @@ class system():
         return
 
     # (generic)
+    # repeat steps until end time is reached
     def runUntil(self, time):
         while self.time < time:
             self.runStep()
         return
 
     # (specific)
-    # time units are in ns (float) 
-    def addClock( 
+    # create a clock.
+    # period is the period (1/frequency) in ns.
+    # width is the pulse length of the clock signal in ns.
+    # phase is the delay of the clock pulse in ns.
+    # a zero phase means that the rising edge of the
+    # clock pulse starts at the beginning of the period.
+    # the width plus th phase should not exceed the period.
+    def createClock( 
         self,
         period = 20,    # 20ns, 50MHz
-        width  = 10,    # symetrical clock
+        width  = 10,    # symmetrical clock
         phase  = 0,     # 0ns, in phase
         name   = None): # None, generic name
         # check duplicate
         if name in self.devicelist.keys():
-            print(f"system.addClock: clock name duplicate.")
+            print(f"system.createClock: clock name duplicated.")
             print(f"  name {name} already used.")
             print(f"  exiting...")
             exit()
         # get generic clock name
-        if not name: name = self.getName("clr")
+        if not name: name = self.getName("clk")
         # create
         self.devicelist[name] = \
             clock(period, width, phase, name)
@@ -135,14 +152,16 @@ class system():
         return self.devicelist[name]
 
     # (specific)
-    # time units are in ns (float) 
-    def addCounter( 
+    # size is the number of bits.
+    # n bits means counting between 0 and 2^n-1.
+    # default is 4 bits which gives a count between 0 and 15.
+    def createCounter( 
         self,
-        size = 4,     # 4, half a byte
+        size = 4,     # 4bits, count 0 to 15
         name = None): # None, generic name
         # check duplicate
         if name in self.devicelist.keys():
-            print(f"system.addClock: clock name duplicate.")
+            print(f"system.createCounter: counter name duplicated.")
             print(f"  name {name} already used.")
             print(f"  exiting...")
             exit()
@@ -154,29 +173,32 @@ class system():
         # done
         return self.devicelist[name]
 
-
     # (specific)
-    # time units are in ns (float) 
-    def addSystemClear( 
+    # create a reset signal.
+    # length is the period of the reset signal in ns.
+    # the reset signal occurs once at the start of the run.
+    def createReset( 
         self,
         length = 1,   # 1, one cycle
         name = None): # None, generic name
         # check duplicate
         if name in self.devicelist.keys():
-            print(f"system.addClock: clock name duplicate.")
+            print(f"system.createReset: reset name duplicated.")
             print(f"  name {name} already used.")
             print(f"  exiting...")
             exit()
         # get generic counter name
-        if not name: name = self.getName("scl")
+        if not name: name = self.getName("rst")
         # create
         self.devicelist[name] = \
-            sysClear(length, name)
+            reset(length, name)
         # done
         return self.devicelist[name]
 
-
 # PORT COMMON #############################################
+# 'addSignal' add a signal name to the port and increment the
+# signal count. 'export' returns the port state only if the
+# state value has been changed. 
 
 class portCommon():
 
@@ -208,6 +230,9 @@ class portCommon():
         return ""
 
 # OUTPUT PORTS ############################################
+# 'set' asserts the value of the port. The method detects if
+# the asserted value has changed the value of the port and sets
+# the 'uptodate' flag. no change <=> 'uptodate' is true.
 
 class outPort(portCommon):
 
@@ -245,6 +270,11 @@ class outPort(portCommon):
 # INPUT PORTS #############################################
 
 class inPort(portCommon):
+# an input port is always linked to an output port.
+# !!! create two port constant: vcc and gnd.
+# 'update' sets the new value of the input port from
+# its linked output port value. It sets the 'uptodate' flag.
+# it also detects the 'rising' and 'falling' edge events.
 
     def __init__(self, port, name = None):
         # linking (adding to the network)
@@ -283,8 +313,10 @@ class inPort(portCommon):
         self.state = newvalue                 
         return
 
-
 # DEVICE #################################################
+# the 'Device' class is a template class.
+# 'writeVar' helps to format the header of the VCD file.
+# 'makeModule' write this device header for the VCD file. 
 
 class Device():
 
@@ -349,6 +381,10 @@ class Device():
             exportResult += p.export()
         return exportResult
 
+    def display(self):
+        pass
+
+# the following classes are built on the 'Device' template class.
 
 # COUNTER #################################################
 
@@ -363,13 +399,15 @@ class Device():
 
 class counter(Device):
 
-    # activated when input connected
+    # the following ports are activated only when
+    # an input port is dynamically connected to them  
     clr = None # clear   (reset)
     trg = None # trigger (clock)
-    # wrt = None # write   (load
-    # ena = None # enable  (output)
-    # cse = None # chip select
+    # wrt = None # write   (load) ...to implement
+    # ena = None # enable  (output) ...to implement
+    # cse = None # chip select ...to implement
 
+    # re-define __init__ to add parameter 'size'
     def __init__(self,
             size,   # counter bits width 
             name):  # counter name
@@ -377,17 +415,17 @@ class counter(Device):
         Device.__init__(self, name)
         # record configuration
         self.configuration = size
-        # instanciate output port
+        # instantiate output port
         self.Q = outPort(size, "Q")
         # register port
         self.outports.append(self.Q)
-        # set default output port value
+        # set default output port value (random bits)
         self.Q.set(f'{rnd(size):0{size}b}')
         return
 
     def addTrigger(self,
             p): # port
-        # instanciate input port
+        # instantiate input port
         self.trg = inPort(p, "trg")
         # register port
         self.inports.append(self.trg)
@@ -395,7 +433,7 @@ class counter(Device):
 
     def addClear(self,
             p): # port
-        # instanciate input port
+        # instantiate input port
         self.clr = inPort(p, "clr")
         # register port
         self.inports.append(self.clr)
@@ -409,12 +447,16 @@ class counter(Device):
         print(f"CNT: {name},{size},{value}")
         return
 
+    # here is defined the behaviour of the counter device
+    # asynchronous reset (counter is zero whenever 'clr' is low)
+    # synchronous increment on the rising edge of 'clk'
+    # the counter value is coerced modulo 'size'.
     def updateOutputPorts(self, timeStamp):
         # get configuration
         size = self.configuration
         # asynchronous clear on active low
         if self.clr.state == '0':
-            # clear ouput
+            # clear output
             self.Q.set(f'{0:0{size}b}')
             return
         # update on rising edge of trigger
@@ -433,6 +475,8 @@ class counter(Device):
 
 class clock(Device):
 
+    # re-define __init__ to add parameters:
+    # 'period', 'width' and 'phase'.
     def __init__(
             self,
             period, # clock period (float time)
@@ -443,7 +487,7 @@ class clock(Device):
         Device.__init__(self, name)
         # record configuration
         self.configuration = period, width, phase
-        # instanciate output ports
+        # instantiate output ports
         self.P = outPort(1, "P")
         self.Q = outPort(1, "Q")
         # register port
@@ -463,6 +507,8 @@ class clock(Device):
         print(f"CLK: {name},{period},{width},{phase},{value}")
         return
 
+    # here is defined the behaviour of the clock device
+    # the device has also an inverted output. 
     def updateOutputPorts(self, timeStamp):
         # get configuration
         period, width, phase = self.configuration
@@ -474,9 +520,9 @@ class clock(Device):
         # done
         return
 
-# SYSTEM CLEAR ############################################
+# RESET ###################################################
 
-class sysClear(Device):
+class reset(Device):
 
     def __init__(self,
             length, # clear delay length
@@ -485,7 +531,7 @@ class sysClear(Device):
         Device.__init__(self, name)
         # record configuration
         self.configuration = length
-        # instanciate output port
+        # instantiate output port
         self.Q = outPort(1, "Q")
         # register port
         self.outports.append(self.Q)
@@ -499,7 +545,7 @@ class sysClear(Device):
         length = self.configuration
         value = f"{self.Q.get()}"
         # display
-        print(f"SCL: {name},{length},{value}")
+        print(f"RST: {name},{length},{value}")
         return
 
     def updateOutputPorts(self, timeStamp):
@@ -512,7 +558,7 @@ class sysClear(Device):
         # done
         return
 
-# BUILD ###################################################
+# EXAMPLE #################################################
 
 if __name__ == "__main__":
 
@@ -525,30 +571,26 @@ if __name__ == "__main__":
     print("comment: system architecture simulator")
     print("run Python3:" + sys.version);
 
-    # instanciate simulator
-    mySystem = system("version 0.00")
+    # instantiate simulator
+    S = system("version 0.00")
     
-    # add system clear
-    mysysclear = mySystem.addSystemClear(5)
+    # add reset signal
+    rst = S.createReset(35) # hold reset for 35ns
 
-    # instanciate a clock
-    myclock = mySystem.addClock()
+    # instantiate clock
+    clk = S.createClock()
+
+    # instantiate counter and make network
+    cnt = S.createCounter()
+    cnt.addTrigger(clk.Q) # use clock output 'Q' for counter trigger
+    cnt.addClear(rst.Q) # use reset output 'Q' for counter reset
     
-    # instanciate a counter
-    myCounter = mySystem.addCounter()
-    
-    # make counter inputs network
-    myCounter.addTrigger(myclock.Q)
-    myCounter.addClear(mysysclear.Q)
-    
-    # show all devices
-    mySystem.displayDevices()
-    
+    # show all devices defined
+    S.displayDevices()
+
     # open export file
-    mySystem.openFile()
-    
+    S.openFile()    
     # run simulator    
-    mySystem.runUntil(250)
-    
+    S.runUntil(500)
     # close export file
-    mySystem.closeFile()
+    S.closeFile()
