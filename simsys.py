@@ -16,10 +16,13 @@
 # todo: make time, records, etc... 
 # todo: break point, step-by-step, state display
 
+# todo: add validity check of device setup  
+
 # collect every device in the system
 # run system engine and record data
 
 from numpy.random import randint as rnd
+from numpy import log as ln
 from time import strftime 
 from sys import exit
 
@@ -192,6 +195,28 @@ class system():
         # create
         self.devicelist[name] = \
             reset(length, name)
+        # done
+        return self.devicelist[name]
+
+    # (specific)
+    # size is the number of bits.
+    # n bits means counting between 0 and 2^n-1.
+    # default is 4 bits which gives a count between 0 and 15.
+    def createLUT( 
+        self,
+        table = '1110', # default table is a 2 inputs NAND gate
+        name = None): # None, generic name
+        # check duplicate
+        if name in self.devicelist.keys():
+            print(f"system.createLUT: LUT name duplicated.")
+            print(f"  name {name} already used.")
+            print(f"  exiting...")
+            exit()
+        # get generic counter name
+        if not name: name = self.getName("lut")
+        # create
+        self.devicelist[name] = \
+            lut(table, name)
         # done
         return self.devicelist[name]
 
@@ -419,8 +444,9 @@ class counter(Device):
         self.Q = outPort(size, "Q")
         # register port
         self.outports.append(self.Q)
-        # set default output port value (random bits)
-        self.Q.set(f'{rnd(size):0{size}b}')
+        # set initial output port value
+        # self.Q.set('X'*size)               # undefined values
+        self.Q.set(f'{rnd(size):0{size}b}')  # random values
         return
 
     def addTrigger(self,
@@ -558,6 +584,69 @@ class reset(Device):
         # done
         return
 
+# LUT #################################################
+# look up table logic: logic element of FPGAs and other
+# types of programmable logic. inputs are ordered with
+# the least significant bit being the first added. 
+
+class lut(Device):
+
+    # re-define __init__ to add parameter 'size'
+    def __init__(self,
+            table,  # lut table
+            name):  # counter name
+        # call parent class constructor
+        Device.__init__(self, name)
+        # compute size
+        size = int(ln(len(table))/ln(2))
+        # record configuration
+        self.configuration = size, table
+        # instantiate output port
+        self.Q = outPort(1, "Q")
+        # register port
+        self.outports.append(self.Q)
+        # set default output port value (random bits)
+        self.Q.set('X')
+        return
+
+    def addInput(self,
+            p): # port
+        # instantiate input port
+        newport = inPort(p, f"I{len(self.inports)}")
+        # register new port
+        self.inports.append(newport)
+        return
+
+    def display(self):
+        name = self.name
+        size, table = self.configuration
+        value = self.Q.get()
+        # display
+        print(f"LUT: {name},{size},{table},{value}")
+        if not size == len(self.inports):
+            print(f"  Size mismatch.")
+            print(f"    {size} input(s) expected.")
+            print(f"    {len(self.inports)} input(s) found.")
+            print(f"  Exiting...")
+            exit()
+        return
+
+    # the LUT device returns the table value pointed
+    # by the input address value. 
+    def updateOutputPorts(self, timeStamp):
+        # get configuration
+        size, table = self.configuration
+        # get table address
+        a, w = 0, 1 << (size-1)
+        for i in self.inports:
+            a += w*['0','1'].index(i.get())
+            w >>= 1
+        # set new value
+        self.Q.set(table[a])
+        # done
+        return
+
+
 # EXAMPLE #################################################
 
 if __name__ == "__main__":
@@ -578,13 +667,19 @@ if __name__ == "__main__":
     rst = S.createReset(35) # hold reset for 35ns
 
     # instantiate clock
-    clk = S.createClock()
+    clk0 = S.createClock(10,5)
+    clk1 = S.createClock(20,10)
 
     # instantiate counter and make network
     cnt = S.createCounter()
-    cnt.addTrigger(clk.Q) # use clock output 'Q' for counter trigger
+    cnt.addTrigger(clk1.Q) # use clock output 'Q' for counter trigger
     cnt.addClear(rst.Q) # use reset output 'Q' for counter reset
-    
+
+    # instantiate LUT
+    lut1 = S.createLUT('1001')
+    lut1.addInput(clk0.Q)
+    lut1.addInput(clk1.Q)
+
     # show all devices defined
     S.displayDevices()
 
