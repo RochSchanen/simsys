@@ -646,6 +646,68 @@ class lut(Device):
         # done
         return
 
+# RAM #################################################
+# Random Access Memory: store words pointed by address.
+
+class ram(Device):
+
+    adr = None
+    clk = None    
+
+    # re-define __init__ to add parameter 'size'
+    def __init__(self,
+            length,  # number of words
+            width,   # size of the words
+            name):   # counter name
+        # call parent class constructor
+        Device.__init__(self, name)
+        # record configuration
+        self.configuration = length, size
+        # instantiate output port
+        self.Q = outPort(size, "Q")
+        # register port
+        self.outports.append(self.Q)
+        # set default output port value (random bits)
+        self.Q.set('X'*size)
+        return
+
+    def addInput(self,
+            p): # port
+        # instantiate input port
+        newport = inPort(p, f"I{len(self.inports)}")
+        # register new port
+        self.inports.append(newport)
+        return
+
+    def display(self):
+        name = self.name
+        size, table = self.configuration
+        value = self.Q.get()
+        # display
+        print(f"LUT: {name},{size},{table},{value}")
+        if not size == len(self.inports):
+            print(f"  Size mismatch.")
+            print(f"    {size} input(s) expected.")
+            print(f"    {len(self.inports)} input(s) found.")
+            print(f"  Exiting...")
+            exit()
+        return
+
+    # the LUT device returns the table value pointed
+    # by the input address value. 
+    def updateOutputPorts(self, timeStamp):
+        # get configuration
+        size, table = self.configuration
+        # get table address
+        a, w = 0, 1 << (size-1)
+        for i in self.inports:
+            a += w*['0','1'].index(i.get())
+            w >>= 1
+        # set new value
+        self.Q.set(table[a])
+        # done
+        return
+
 
 # EXAMPLE #################################################
 
@@ -669,16 +731,20 @@ if __name__ == "__main__":
     # instantiate clock
     clk0 = S.createClock(10,5)
     clk1 = S.createClock(20,10)
-
+    clk2 = S.createClock(40,20)
     # instantiate counter and make network
     cnt = S.createCounter()
     cnt.addTrigger(clk1.Q) # use clock output 'Q' for counter trigger
     cnt.addClear(rst.Q) # use reset output 'Q' for counter reset
 
-    # instantiate LUT
-    lut1 = S.createLUT('1001')
+    # instantiate LUT with 3 inputs AND gate
+    #              I0 = 01010101
+    #              I1 = 00110011
+    #              I2 = 00001111
+    lut1 = S.createLUT('00000001')
     lut1.addInput(clk0.Q)
     lut1.addInput(clk1.Q)
+    lut1.addInput(clk2.Q)
 
     # show all devices defined
     S.displayDevices()
