@@ -7,30 +7,33 @@
 # author: roch schanen
 # comment: device library
 
-# the following classes are built on the 'Device' template class.
+# import core classes
 from core import Device, inPort, outPort
 
 # CLOCK ###################################################
 
-# period is the period (1/frequency) in ns.
-# width is the pulse length of the clock signal in ns.
-# phase is the delay of the clock pulse in ns.
-# a zero phase means that the rising edge of the
-# clock pulse starts at the beginning of the period.
-# the width plus the phase should not exceed the period.
+# a clock has no input
+# a clock has a single output
+# the output value depends only on time
+# the clock behaviour is definied by the following parameters: 
+# - "period" is the period (1/frequency) in ns.
+# - "width" is the pulse length of the clock signal in ns.
+# - "phase" is the delay of the clock pulse in ns.
+# a zero phase means that the rising edge of the pulse starts at the
+# beginning of the period. the width plus the phase should not exceed
+# the period.
 
 class clock(Device):
 
     genericName = 'clk'
 
-    # re-define __init__ to add parameters:
-    # 'period', 'width' and 'phase'.
     def __init__(
             self,
             period = 20,    # clock period: 20ns, 50MHz
             width  = 10,    # pulse width : 10ns, symmetrical
             phase  = 0,     # phase shift : 0ns, in-phase
             name   = None): # clock name  : None, use generic
+
         # call parent class constructor
         Device.__init__(self, name)
         # record configuration
@@ -44,25 +47,27 @@ class clock(Device):
         # set default output ports value
         self.P.set('1')
         self.Q.set('0')
+
         # done
         return
 
     def display(self):
+        # get name
         name = self.name
+        # get configuration
         period, width, phase = self.configuration
+        # get current values
         value = f"{self.P.get()},{self.Q.get()}"
         # display
         print(f"clock: {name},{period},{width},{phase},{value}")
         return
 
-    # here is defined the behaviour of the clock device
-    # the device has also an inverted output. 
     def updateOutputPorts(self, timeStamp):
         # get configuration
         period, width, phase = self.configuration
-        # get new state
+        # compute new state
         m = (timeStamp-phase) % period
-        # update ouputs
+        # update ouputs values
         self.P.set(['0','1'][m < width])
         self.Q.set(['1','0'][m < width])
         # done

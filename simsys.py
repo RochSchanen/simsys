@@ -7,6 +7,9 @@
 # author: roch schanen
 # comment: system architecture simulator
 
+# todo: when declaring bus, create
+# individual ports as well... Think!
+
 # todo: make signals
 # todo: make bus
 # todo: make engine
@@ -18,8 +21,7 @@
 
 # todo: add validity check of device setup  
 
-# collect every device in the system
-# run system engine and record data
+# collect every device in the system run system engine and record data
 
 from numpy.random import randint as rnd
 from numpy import log as ln
@@ -32,9 +34,9 @@ SEP = " "    # SIGNAL SEPARATOR
 EOL = "\n"   # END-OF-LINE CODE
 
 # SIGNAL COUNTER
-# the signal counter is used for the VCD file wire names.
-# they are all given the format 'Wn' where 'W' is the letter W
-# and 'n' is an index number. The value of n is given by the
+# the signal counter is used for the VCD file wire names. they are all
+# given the format 'Wn' where 'W' is the letter W and 'n' is an index
+# number. The value of n is given by the
 # counter 'N'.
 
 N = 0
@@ -55,9 +57,10 @@ class system():
         return
 
     # (generic)
-    # getName returns a name in the form 'Sn' where the string S
-    # is a given generic name and 'n' is an index number. The index  
-    # is incremented with every new call.
+    # getName returns a device name in the form 'Sn' where the string
+    # S is a given generic name and 'n' is an index number. The index
+    # is incremented with every new call. This provides an trivial way
+    # to create unique device names.
     def getName(self, generic):
         n, k = 0, f"{generic}0"
         while k in self.devicelist.keys():
@@ -97,8 +100,9 @@ class system():
         return
 
     # (generic)
-    # generate a new step in the simulation
-    # the step resolution is so far set to 1ns
+    # this generate a new step in the simulation. the step resolution
+    # is 1ns at the moment. it should be made possible to vary this
+    # value. 
     def runStep(self):
         # export new state
         exportResult = ""
@@ -126,31 +130,23 @@ class system():
             self.runStep()
         return
 
-    # (specific)
-    # create a clock.
-    # period is the period (1/frequency) in ns.
-    # width is the pulse length of the clock signal in ns.
-    # phase is the delay of the clock pulse in ns.
-    # a zero phase means that the rising edge of the
-    # clock pulse starts at the beginning of the period.
-    # the width plus th phase should not exceed the period.
-    def createClock( 
-        self,
-        period = 20,    # 20ns, 50MHz
-        width  = 10,    # symmetrical clock
-        phase  = 0,     # 0ns, in phase
-        name   = None): # None, generic name
-        # check duplicate
+    # (generic)
+    def add(self, device):
+        # get device given name
+        name = device.name
+        # check for duplicate
         if name in self.devicelist.keys():
-            print(f"system.createClock: clock name duplicated.")
+            print(f"system.create({name}): duplicated name.")
             print(f"  name {name} already used.")
             print(f"  exiting...")
             exit()
-        # get generic clock name
-        if not name: name = self.getName("clk")
-        # create
-        self.devicelist[name] = \
-            clock(period, width, phase, name)
+        # make generic name
+        if name == None:
+            name = self.getName(device.genericName)
+            # record new name
+            device.name = name
+        # register new device
+        self.devicelist[name] = device
         # done
         return self.devicelist[name]
 
@@ -345,8 +341,9 @@ class inPort(portCommon):
 
 class Device():
 
-    def __init__(self,
-            name):  # device name
+    genericName = "dev"
+
+    def __init__(self, name):
         self.name = name
         self.inports  = []
         self.outports = []
@@ -411,104 +408,27 @@ class Device():
 
 # the following classes are built on the 'Device' template class.
 
-# COUNTER #################################################
-
-# todo: counter options
-# clr on active low, high
-# trg on rising, falling edge
-# wrt on active low, high
-# ena on active low, high
-# cse on active low, high
-# initial value random, zero, maybe undefined
-# maybe parallel, serial load
-
-class counter(Device):
-
-    # the following ports are activated only when
-    # an input port is dynamically connected to them  
-    clr = None # clear   (reset)
-    trg = None # trigger (clock)
-    # wrt = None # write   (load) ...to implement
-    # ena = None # enable  (output) ...to implement
-    # cse = None # chip select ...to implement
-
-    # re-define __init__ to add parameter 'size'
-    def __init__(self,
-            size,   # counter bits width 
-            name):  # counter name
-        # call parent class constructor
-        Device.__init__(self, name)
-        # record configuration
-        self.configuration = size
-        # instantiate output port
-        self.Q = outPort(size, "Q")
-        # register port
-        self.outports.append(self.Q)
-        # set initial output port value
-        # self.Q.set('X'*size)               # undefined values
-        self.Q.set(f'{rnd(size):0{size}b}')  # random values
-        return
-
-    def addTrigger(self,
-            p): # port
-        # instantiate input port
-        self.trg = inPort(p, "trg")
-        # register port
-        self.inports.append(self.trg)
-        return
-
-    def addClear(self,
-            p): # port
-        # instantiate input port
-        self.clr = inPort(p, "clr")
-        # register port
-        self.inports.append(self.clr)
-        return
-
-    def display(self):
-        name = self.name
-        size = self.configuration
-        value = self.Q.get()
-        # display
-        print(f"CNT: {name},{size},{value}")
-        return
-
-    # here is defined the behaviour of the counter device
-    # asynchronous reset (counter is zero whenever 'clr' is low)
-    # synchronous increment on the rising edge of 'clk'
-    # the counter value is coerced modulo 'size'.
-    def updateOutputPorts(self, timeStamp):
-        # get configuration
-        size = self.configuration
-        # asynchronous clear on active low
-        if self.clr.state == '0':
-            # clear output
-            self.Q.set(f'{0:0{size}b}')
-            return
-        # update on rising edge of trigger
-        if self.trg.rising:
-            # get incremented state
-            n = int(self.Q.get(), 2) + 1
-            # make n string, LSB(size) only
-            newvalue = f'{n:0{size}b}'[-size:]
-            # new output
-            self.Q.set(newvalue)
-            return
-        # done
-        return
-
 # CLOCK ###################################################
 
+# period is the period (1/frequency) in ns.
+# width is the pulse length of the clock signal in ns.
+# phase is the delay of the clock pulse in ns.
+# a zero phase means that the rising edge of the
+# clock pulse starts at the beginning of the period.
+# the width plus the phase should not exceed the period.
+
 class clock(Device):
+
+    genericName = 'clk'
 
     # re-define __init__ to add parameters:
     # 'period', 'width' and 'phase'.
     def __init__(
             self,
-            period, # clock period (float time)
-            width,  # pulse width  (float time)
-            phase,  # phase shift  (float time)
-            name):  # clock name
+            period = 20,    # clock period: 20ns, 50MHz
+            width  = 10,    # pulse width : 10ns, symmetrical
+            phase  = 0,     # phase shift : 0ns, in-phase
+            name   = None): # clock name  : None, use generic
         # call parent class constructor
         Device.__init__(self, name)
         # record configuration
@@ -530,7 +450,7 @@ class clock(Device):
         period, width, phase = self.configuration
         value = f"{self.P.get()},{self.Q.get()}"
         # display
-        print(f"CLK: {name},{period},{width},{phase},{value}")
+        print(f"clock: {name},{period},{width},{phase},{value}")
         return
 
     # here is defined the behaviour of the clock device
@@ -546,205 +466,292 @@ class clock(Device):
         # done
         return
 
-# RESET ###################################################
+# # COUNTER #################################################
 
-class reset(Device):
+# # todo: counter options
+# # clr on active low, high
+# # trg on rising, falling edge
+# # wrt on active low, high
+# # ena on active low, high
+# # cse on active low, high
+# # initial value random, zero, maybe undefined
+# # maybe parallel, serial load
 
-    def __init__(self,
-            length, # clear delay length
-            name):  # device name
-        # call parent class constructor
-        Device.__init__(self, name)
-        # record configuration
-        self.configuration = length
-        # instantiate output port
-        self.Q = outPort(1, "Q")
-        # register port
-        self.outports.append(self.Q)
-        # set default output ports value
-        self.Q.set('0')
-        # done
-        return
+# class counter(Device):
 
-    def display(self):
-        name = self.name
-        length = self.configuration
-        value = f"{self.Q.get()}"
-        # display
-        print(f"RST: {name},{length},{value}")
-        return
+#     # the following ports are activated only when
+#     # an input port is dynamically connected to them  
+#     clr = None # clear   (reset)
+#     trg = None # trigger (clock)
+#     # wrt = None # write   (load) ...to implement
+#     # ena = None # enable  (output) ...to implement
+#     # cse = None # chip select ...to implement
 
-    def updateOutputPorts(self, timeStamp):
-        # get configuration
-        length = self.configuration
-        # compute output
-        value = ['1','0'][timeStamp < length]
-        # update output
-        self.Q.set(value)
-        # done
-        return
+#     # re-define __init__ to add parameter 'size'
+#     def __init__(self,
+#             size,   # counter bits width 
+#             name):  # counter name
+#         # call parent class constructor
+#         Device.__init__(self, name)
+#         # record configuration
+#         self.configuration = size
+#         # instantiate output port
+#         self.Q = outPort(size, "Q")
+#         # register port
+#         self.outports.append(self.Q)
+#         # set initial output port value
+#         # self.Q.set('X'*size)               # undefined values
+#         self.Q.set(f'{rnd(size):0{size}b}')  # random values
+#         return
 
-# LUT #################################################
-# look up table logic: logic element of FPGAs and other
-# types of programmable logic. inputs are ordered with
-# the least significant bit being the first added. 
+#     def addTrigger(self,
+#             p): # port
+#         # instantiate input port
+#         self.trg = inPort(p, "trg")
+#         # register port
+#         self.inports.append(self.trg)
+#         return
 
-class lut(Device):
+#     def addClear(self,
+#             p): # port
+#         # instantiate input port
+#         self.clr = inPort(p, "clr")
+#         # register port
+#         self.inports.append(self.clr)
+#         return
 
-    # re-define __init__ to add parameter 'size'
-    def __init__(self,
-            table,  # lut table
-            name):  # counter name
-        # call parent class constructor
-        Device.__init__(self, name)
-        # compute size
-        size = int(ln(len(table))/ln(2))
-        # record configuration
-        self.configuration = size, table
-        # instantiate output port
-        self.Q = outPort(1, "Q")
-        # register port
-        self.outports.append(self.Q)
-        # set default output port value (random bits)
-        self.Q.set('X')
-        return
+#     def display(self):
+#         name = self.name
+#         size = self.configuration
+#         value = self.Q.get()
+#         # display
+#         print(f"CNT: {name},{size},{value}")
+#         return
 
-    def addInput(self,
-            p): # port
-        # instantiate input port
-        newport = inPort(p, f"I{len(self.inports)}")
-        # register new port
-        self.inports.append(newport)
-        return
+#     # here is defined the behaviour of the counter device
+#     # asynchronous reset (counter is zero whenever 'clr' is low)
+#     # synchronous increment on the rising edge of 'clk'
+#     # the counter value is coerced modulo 'size'.
+#     def updateOutputPorts(self, timeStamp):
+#         # get configuration
+#         size = self.configuration
+#         # asynchronous clear on active low
+#         if self.clr.state == '0':
+#             # clear output
+#             self.Q.set(f'{0:0{size}b}')
+#             return
+#         # update on rising edge of trigger
+#         if self.trg.rising:
+#             # get incremented state
+#             n = int(self.Q.get(), 2) + 1
+#             # make n string, LSB(size) only
+#             newvalue = f'{n:0{size}b}'[-size:]
+#             # new output
+#             self.Q.set(newvalue)
+#             return
+#         # done
+#         return
 
-    def display(self):
-        name = self.name
-        size, table = self.configuration
-        value = self.Q.get()
-        # display
-        print(f"LUT: {name},{size},{table},{value}")
-        if not size == len(self.inports):
-            print(f"  Size mismatch.")
-            print(f"    {size} input(s) expected.")
-            print(f"    {len(self.inports)} input(s) found.")
-            print(f"  Exiting...")
-            exit()
-        return
+# # RESET ###################################################
 
-    # the LUT device returns the table value pointed
-    # by the input address value. 
-    def updateOutputPorts(self, timeStamp):
-        # get configuration
-        size, table = self.configuration
-        # get table address
-        a, w = 0, 1 << (size-1)
-        for i in self.inports:
-            a += w*['0','1'].index(i.get())
-            w >>= 1
-        # set new value
-        self.Q.set(table[a])
-        # done
-        return
+# class reset(Device):
 
-# RAM #################################################
-# Random Access Memory: store words pointed by address.
+#     def __init__(self,
+#             length, # clear delay length
+#             name):  # device name
+#         # call parent class constructor
+#         Device.__init__(self, name)
+#         # record configuration
+#         self.configuration = length
+#         # instantiate output port
+#         self.Q = outPort(1, "Q")
+#         # register port
+#         self.outports.append(self.Q)
+#         # set default output ports value
+#         self.Q.set('0')
+#         # done
+#         return
 
-class ram(Device):
+#     def display(self):
+#         name = self.name
+#         length = self.configuration
+#         value = f"{self.Q.get()}"
+#         # display
+#         print(f"RST: {name},{length},{value}")
+#         return
 
-    adr = None
-    clk = None    
+#     def updateOutputPorts(self, timeStamp):
+#         # get configuration
+#         length = self.configuration
+#         # compute output
+#         value = ['1','0'][timeStamp < length]
+#         # update output
+#         self.Q.set(value)
+#         # done
+#         return
 
-    # re-define __init__ to add parameter 'size'
-    def __init__(self,
-            length,  # number of words
-            width,   # size of the words
-            name):   # counter name
-        # call parent class constructor
-        Device.__init__(self, name)
-        # record configuration
-        self.configuration = length, size
-        # instantiate output port
-        self.Q = outPort(size, "Q")
-        # register port
-        self.outports.append(self.Q)
-        # set default output port value (random bits)
-        self.Q.set('X'*size)
-        return
+# # LUT #################################################
+# # look up table logic: logic element of FPGAs and other
+# # types of programmable logic. inputs are ordered with
+# # the least significant bit being the first added. 
 
-    def addInput(self,
-            p): # port
-        # instantiate input port
-        newport = inPort(p, f"I{len(self.inports)}")
-        # register new port
-        self.inports.append(newport)
-        return
+# class lut(Device):
 
-    def display(self):
-        name = self.name
-        size, table = self.configuration
-        value = self.Q.get()
-        # display
-        print(f"LUT: {name},{size},{table},{value}")
-        if not size == len(self.inports):
-            print(f"  Size mismatch.")
-            print(f"    {size} input(s) expected.")
-            print(f"    {len(self.inports)} input(s) found.")
-            print(f"  Exiting...")
-            exit()
-        return
+#     # re-define __init__ to add parameter 'size'
+#     def __init__(self,
+#             table,  # lut table
+#             name):  # counter name
+#         # call parent class constructor
+#         Device.__init__(self, name)
+#         # compute size
+#         size = int(ln(len(table))/ln(2))
+#         # record configuration
+#         self.configuration = size, table
+#         # instantiate output port
+#         self.Q = outPort(1, "Q")
+#         # register port
+#         self.outports.append(self.Q)
+#         # set default output port value (random bits)
+#         self.Q.set('X')
+#         return
 
-    # the LUT device returns the table value pointed
-    # by the input address value. 
-    def updateOutputPorts(self, timeStamp):
-        # get configuration
-        size, table = self.configuration
-        # get table address
-        a, w = 0, 1 << (size-1)
-        for i in self.inports:
-            a += w*['0','1'].index(i.get())
-            w >>= 1
-        # set new value
-        self.Q.set(table[a])
-        # done
-        return
+#     def addInput(self,
+#             p): # port
+#         # instantiate input port
+#         newport = inPort(p, f"I{len(self.inports)}")
+#         # register new port
+#         self.inports.append(newport)
+#         return
+
+#     def display(self):
+#         name = self.name
+#         size, table = self.configuration
+#         value = self.Q.get()
+#         # display
+#         print(f"LUT: {name},{size},{table},{value}")
+#         if not size == len(self.inports):
+#             print(f"  Size mismatch.")
+#             print(f"    {size} input(s) expected.")
+#             print(f"    {len(self.inports)} input(s) found.")
+#             print(f"  Exiting...")
+#             exit()
+#         return
+
+#     # the LUT device returns the table value pointed
+#     # by the input address value. 
+#     def updateOutputPorts(self, timeStamp):
+#         # get configuration
+#         size, table = self.configuration
+#         # get table address
+#         a, w = 0, 1 << (size-1)
+#         for i in self.inports:
+#             a += w*['0','1'].index(i.get())
+#             w >>= 1
+#         # set new value
+#         self.Q.set(table[a])
+#         # done
+#         return
+
+# # RAM #################################################
+# # Random Access Memory: store words pointed by address.
+
+# class ram(Device):
+
+#     adr = None
+#     clk = None    
+
+#     # re-define __init__ to add parameter 'size'
+#     def __init__(self,
+#             length,  # number of words
+#             width,   # size of the words
+#             name):   # counter name
+#         # call parent class constructor
+#         Device.__init__(self, name)
+#         # record configuration
+#         self.configuration = length, size
+#         # instantiate output port
+#         self.Q = outPort(size, "Q")
+#         # register port
+#         self.outports.append(self.Q)
+#         # set default output port value (random bits)
+#         self.Q.set('X'*size)
+#         return
+
+#     def addInput(self,
+#             p): # port
+#         # instantiate input port
+#         newport = inPort(p, f"I{len(self.inports)}")
+#         # register new port
+#         self.inports.append(newport)
+#         return
+
+#     def display(self):
+#         name = self.name
+#         size, table = self.configuration
+#         value = self.Q.get()
+#         # display
+#         print(f"LUT: {name},{size},{table},{value}")
+#         if not size == len(self.inports):
+#             print(f"  Size mismatch.")
+#             print(f"    {size} input(s) expected.")
+#             print(f"    {len(self.inports)} input(s) found.")
+#             print(f"  Exiting...")
+#             exit()
+#         return
+
+#     # the LUT device returns the table value pointed
+#     # by the input address value. 
+#     def updateOutputPorts(self, timeStamp):
+#         # get configuration
+#         size, table = self.configuration
+#         # get table address
+#         a, w = 0, 1 << (size-1)
+#         for i in self.inports:
+#             a += w*['0','1'].index(i.get())
+#             w >>= 1
+#         # set new value
+#         self.Q.set(table[a])
+#         # done
+#         return
 
 
 # EXAMPLE #################################################
 
 if __name__ == "__main__":
 
-    import sys
+    from sys import version as pythonVersion
 
     print("file: simsys.py")
     print("content: system simulator")
     print("created: 2020 july 19 Sunday")
     print("author: roch schanen")
     print("comment: system architecture simulator")
-    print("run Python3:" + sys.version);
+    print("run Python3:" + pythonVersion);
 
     # instantiate simulator
     S = system("version 0.00")
     
-    # add reset signal
-    rst = S.createReset(35) # hold reset for 35ns
+    # # add reset signal
+    # rst = S.createReset(35) # hold reset for 35ns
 
     # instantiate clock
-    clk0 = S.createClock(10,5)
-    clk1 = S.createClock(20,10)
-    clk2 = S.createClock(40,20)
-    # instantiate counter and make network
-    cnt = S.createCounter()
-    cnt.addTrigger(clk1.Q) # use clock output 'Q' for counter trigger
-    cnt.addClear(rst.Q) # use reset output 'Q' for counter reset
+    clk0 = S.add(clock(10,5))
+    clk1 = S.add(clock(20,10))
+    clk2 = S.add(clock(40,20))
 
-    # instantiate LUT with 3 inputs AND gate
+    # instantiate counter and make network
+    # cnt = S.createCounter()
+    # cnt.addTrigger(clk1.Q) # use clock output 'Q' for counter trigger
+    # cnt.addClear(rst.Q) # use reset output 'Q' for counter reset
+
+    # instantiate LUT as a 3 inputs AND gate
     #              I0 = 01010101
     #              I1 = 00110011
     #              I2 = 00001111
-    lut1 = S.createLUT('00000001')
-    lut1.addInput(clk0.Q)
-    lut1.addInput(clk1.Q)
-    lut1.addInput(clk2.Q)
+    # lut1 = S.createLUT('00000001')
+    # lut1.addInput(clk0.Q)
+    # lut1.addInput(clk1.Q)
+    # lut1.addInput(clk2.Q)
 
     # show all devices defined
     S.displayDevices()

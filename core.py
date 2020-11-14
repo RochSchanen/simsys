@@ -7,23 +7,10 @@
 # author: roch schanen
 # comment: core classes
 
-# todo: when declaring bus, create
-# individual ports as well... Think!
-# todo: make signals
-# todo: make bus
-# todo: make engine
-# todo: make processor
-# todo: make memory
-# todo: make devices
-# todo: make time, records, etc... 
-# todo: break point, step-by-step, state display
-# todo: add validity check of device setup  
-# collect every device in the system run system engine and record data
-
 from time import strftime 
 from sys import exit
 
-# FOR COMPATIBILLTY ISSUES
+# CONSTANTS (COMPATIBILLTY ISSUES)
 
 SEP = " "    # SIGNAL SEPARATOR
 EOL = "\n"   # END-OF-LINE CODE
@@ -36,11 +23,12 @@ EOL = "\n"   # END-OF-LINE CODE
 
 N = 0
 
-# SYSTEM / MODULE #########################################
+# SYSTEM #############################################################
+
+# collect devices, run engine and export data
 
 class system():
 
-    # (generic)
     def __init__(self, name):
         date = strftime("%A, %d %b %Y at %H:%M:%S")
         print(f"create system {name}\n{date}")
@@ -51,7 +39,6 @@ class system():
         # done
         return
 
-    # (generic)
     # getName returns a device name in the form 'Sn' where the string
     # S is a given generic name and 'n' is an index number. The index
     # is incremented with every new call. This provides an trivial way
@@ -64,12 +51,10 @@ class system():
         # found name
         return k
 
-    # (generic)
     def displayDevices(self):
         for d in self.devicelist.values(): d.display()            
         return
 
-    # (generic)
     # create a new VCD file and make the file header. 
     def openFile(self, pathName = "./output.vcd"):
         # create file
@@ -89,12 +74,10 @@ class system():
         self.fh = fh
         return
 
-    # (generic)
     def closeFile(self):
         self.fh.close()
         return
 
-    # (generic)
     # this generate a new step in the simulation. the step resolution
     # is 1ns at the moment. it should be made possible to vary this
     # value. 
@@ -118,14 +101,12 @@ class system():
         # done
         return
 
-    # (generic)
     # repeat steps until end time is reached
     def runUntil(self, time):
         while self.time < time:
             self.runStep()
         return
 
-    # (generic)
     def add(self, device):
         # get device given name
         name = device.name
@@ -144,6 +125,8 @@ class system():
         self.devicelist[name] = device
         # done
         return self.devicelist[name]
+
+# PORTS ##############################################################
 
 class portCommon():
 
@@ -174,7 +157,7 @@ class portCommon():
         # no signal
         return ""
 
-# OUTPUT PORTS ############################################
+# OUTPUT PORTS
 # 'set' asserts the value of the port. The method detects if
 # the asserted value has changed the value of the port and sets
 # the 'uptodate' flag. no change <=> 'uptodate' is true.
@@ -212,14 +195,13 @@ class outPort(portCommon):
         # done
         return
 
-# INPUT PORTS #############################################
+# INPUT PORTS
+# an input port should always be linked to an output port. 'update'
+# sets the new value of the input port from the output port. the
+# rising' and 'falling' edge events are automatically detected. the
+# 'uptodate' flag is also set accordingly.
 
 class inPort(portCommon):
-# an input port is always linked to an output port.
-# !!! create two port constant: vcc and gnd.
-# 'update' sets the new value of the input port from
-# its linked output port value. It sets the 'uptodate' flag.
-# it also detects the 'rising' and 'falling' edge events.
 
     def __init__(self, port, name = None):
         # linking (adding to the network)
@@ -258,10 +240,10 @@ class inPort(portCommon):
         self.state = newvalue                 
         return
 
-# DEVICE #################################################
-# the 'Device' class is a template class.
-# 'writeVar' helps to format the header of the VCD file.
-# 'makeModule' write this device header for the VCD file. 
+# DEVICE #############################################################
+# the 'Device' class is a template class. 'writeVar' is used to format
+# the header of the VCD file. 'makeModule' write this device header
+# for the VCD file. 
 
 class Device():
 
@@ -330,7 +312,7 @@ class Device():
     def display(self):
         pass
 
-# EXAMPLE #################################################
+# EXAMPLE ############################################################
 
 if __name__ == "__main__":
 

@@ -7,6 +7,14 @@
 # author: roch schanen
 # comment: system architecture simulator
 
+    # to do: when declaring bus, create
+    # individual ports as well... Think!
+    # to do: make bus
+    # to do: make memory
+    # to do: make processor
+    # to do: debug tools. unconnected inputs  
+    # to do: create port constants vcc and gnd
+
 if __name__ == "__main__":
 
     from sys import version as pythonVersion
