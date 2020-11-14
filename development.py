@@ -15,6 +15,16 @@
     # to do: debug tools. unconnected inputs  
     # to do: create port constants vcc and gnd
 
+    # # todo: counter options
+    # # clr on active low, high
+    # # trg on rising, falling edge
+    # # wrt on active low, high
+    # # ena on active low, high
+    # # cse on active low, high
+    # # initial value random, zero, maybe undefined
+    # # maybe parallel, serial load
+
+
 if __name__ == "__main__":
 
     from sys import version as pythonVersion

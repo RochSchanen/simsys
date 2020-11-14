@@ -10,7 +10,10 @@
 # import core classes
 from core import Device, inPort, outPort
 
-# CLOCK ###################################################
+# import random generator for initialising registers bits
+from numpy.random import randint as rnd
+
+# CLOCK ##############################################################
 
 # a clock has no input
 # a clock has a single output
@@ -34,7 +37,7 @@ class clock(Device):
             phase  = 0,     # phase shift : 0ns, in-phase
             name   = None): # clock name  : None, use generic
 
-        # call parent class constructor
+        # call Device class constructor
         Device.__init__(self, name)
         # record configuration
         self.configuration = period, width, phase
@@ -73,113 +76,90 @@ class clock(Device):
         # done
         return
 
-    # # (specific)
-    # # size is the number of bits.
-    # # n bits means counting between 0 and 2^n-1.
-    # # default is 4 bits which gives a count between 0 and 15.
-    # def createCounter( 
-    #     self,
-    #     size = 4,     # 4bits, count 0 to 15
-    #     name = None): # None, generic name
-    #     # check duplicate
-    #     if name in self.devicelist.keys():
-    #         print(f"system.createCounter: counter name duplicated.")
-    #         print(f"  name {name} already used.")
-    #         print(f"  exiting...")
-    #         exit()
-    #     # get generic counter name
-    #     if not name: name = self.getName("cnt")
-    #     # create
-    #     self.devicelist[name] = \
-    #         counter(size, name)
-    #     # done
-    #     return self.devicelist[name]
+# COUNTER ############################################################
 
-# # COUNTER #################################################
+# size is the number of bits.
+# n bits means counting from 0 to 2^n-1.
+# asynchronous reset: counter is clear whenever 'clr' is low
+# synchronous counting: increment at the rising edge of 'trg'
+# the counter value is coerced to modulo 2^n
 
-# # todo: counter options
-# # clr on active low, high
-# # trg on rising, falling edge
-# # wrt on active low, high
-# # ena on active low, high
-# # cse on active low, high
-# # initial value random, zero, maybe undefined
-# # maybe parallel, serial load
+class counter(Device):
 
-# class counter(Device):
+    genericName = 'cnt'
 
-#     # the following ports are activated only when
-#     # an input port is dynamically connected to them  
-#     clr = None # clear   (reset)
-#     trg = None # trigger (clock)
-#     # wrt = None # write   (load) ...to implement
-#     # ena = None # enable  (output) ...to implement
-#     # cse = None # chip select ...to implement
+    clr = None # clear
+    trg = None # trigger
+    wrt = None # write / count
+    ena = None # enable
+    cse = None # chip select
 
-#     # re-define __init__ to add parameter 'size'
-#     def __init__(self,
-#             size,   # counter bits width 
-#             name):  # counter name
-#         # call parent class constructor
-#         Device.__init__(self, name)
-#         # record configuration
-#         self.configuration = size
-#         # instantiate output port
-#         self.Q = outPort(size, "Q")
-#         # register port
-#         self.outports.append(self.Q)
-#         # set initial output port value
-#         # self.Q.set('X'*size)               # undefined values
-#         self.Q.set(f'{rnd(size):0{size}b}')  # random values
-#         return
+    def __init__(
+            self,
+            size = 4,     # counter width: 4bits, 0 to 15
+            name = None): # counter name
 
-#     def addTrigger(self,
-#             p): # port
-#         # instantiate input port
-#         self.trg = inPort(p, "trg")
-#         # register port
-#         self.inports.append(self.trg)
-#         return
+        # call Device class constructor
+        Device.__init__(self, name)
+        # record configuration
+        self.configuration = size
+        # instantiate output port
+        self.Q = outPort(size, "Q")
+        # register port
+        self.outports.append(self.Q)
+        # set initial output port value
+        self.Q.set(f'{rnd(size):0{size}b}')  # random
+        # to init with unknown value, use "self.Q.set('U'*size)"
+        return
 
-#     def addClear(self,
-#             p): # port
-#         # instantiate input port
-#         self.clr = inPort(p, "clr")
-#         # register port
-#         self.inports.append(self.clr)
-#         return
+    def addTrigger(self, port):
+        # instantiate input port
+        self.trg = inPort(port, "trg")
+        # register port
+        self.inports.append(self.trg)
+        return
 
-#     def display(self):
-#         name = self.name
-#         size = self.configuration
-#         value = self.Q.get()
-#         # display
-#         print(f"CNT: {name},{size},{value}")
-#         return
+    def addClear(self, port):
+        # instantiate input port
+        self.clr = inPort(port, "clr")
+        # register port
+        self.inports.append(self.clr)
+        return
 
-#     # here is defined the behaviour of the counter device
-#     # asynchronous reset (counter is zero whenever 'clr' is low)
-#     # synchronous increment on the rising edge of 'clk'
-#     # the counter value is coerced modulo 'size'.
-#     def updateOutputPorts(self, timeStamp):
-#         # get configuration
-#         size = self.configuration
-#         # asynchronous clear on active low
-#         if self.clr.state == '0':
-#             # clear output
-#             self.Q.set(f'{0:0{size}b}')
-#             return
-#         # update on rising edge of trigger
-#         if self.trg.rising:
-#             # get incremented state
-#             n = int(self.Q.get(), 2) + 1
-#             # make n string, LSB(size) only
-#             newvalue = f'{n:0{size}b}'[-size:]
-#             # new output
-#             self.Q.set(newvalue)
-#             return
-#         # done
-#         return
+    def display(self):
+        # get name
+        name = self.name
+        # get configuration
+        size = self.configuration
+        # get current values
+        value = self.Q.get()
+        # display
+        print(f"CNT: {name},{size},{value}")
+        return
+
+    def updateOutputPorts(self, timeStamp):
+        # get configuration
+        size = self.configuration
+        # asynchronous clear on active low
+        if self.clr:
+            if self.clr.state == '0':
+                # clear output
+                self.Q.set(f'{0:0{size}b}')
+                return
+        # update on rising edge of trigger
+        if self.trg:
+            if self.trg.rising:
+                # get incremented state
+                n = int(self.Q.get(), 2) + 1
+                # make n string, LSB(size) only
+                newvalue = f'{n:0{size}b}'[-size:]
+                # update output values
+                self.Q.set(newvalue)
+                return
+        # done
+        return
+
+# RESET ##############################################################
 
     # # (specific)
     # # create a reset signal.
@@ -202,8 +182,6 @@ class clock(Device):
     #         reset(length, name)
     #     # done
     #     return self.devicelist[name]
-
-# # RESET ###################################################
 
 # class reset(Device):
 
@@ -407,7 +385,11 @@ if __name__ == "__main__":
     S = system("version 0.00")
     
     # instantiate a clock
-    S.add(clock())
+    clk = S.add(clock())
+
+    # instantiate a counter
+    cnt = S.add(counter())
+    cnt.addTrigger(clk.Q)
 
     # show all devices defined
     S.displayDevices()
@@ -416,7 +398,7 @@ if __name__ == "__main__":
     S.openFile()
 
     # run simulator 
-    S.runUntil(150) # 150ns
+    S.runUntil(500) # 150ns
     
     # close export file
     S.closeFile()
