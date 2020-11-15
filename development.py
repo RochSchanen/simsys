@@ -7,23 +7,22 @@
 # author: roch schanen
 # comment: system architecture simulator
 
-    # to do: when declaring bus, create
-    # individual ports as well... Think!
-    # to do: make bus
-    # to do: make memory
-    # to do: make processor
-    # to do: debug tools. unconnected inputs  
+    # to do: introduce high impedance values for buses: buffer device
+    # to do: allow to declare additional ouput port that form a subset
+    # of existing ouput ports: build bus or sigle out wires from a bus
+    # to do: bus, subset, wire
+    # to do: memory
+    # to do: processor
+    # to do: debug tools: find disconnected inputs when display
     # to do: create port constants vcc and gnd
 
-    # # todo: counter options
-    # # clr on active low, high
-    # # trg on rising, falling edge
-    # # wrt on active low, high
-    # # ena on active low, high
-    # # cse on active low, high
-    # # initial value random, zero, maybe undefined
-    # # maybe parallel, serial load
+    # maybe parallel, serial load
+    # select random level at start up / "U" / "0" / "1"
 
+    # to do: add a delay to the reset pulse.
+    # to do: add a clear input to the reset device
+
+    # to do: add standard gate constants for the lut
 
 if __name__ == "__main__":
 
