@@ -7,23 +7,6 @@
 # author: roch schanen
 # comment: system architecture simulator
 
-    # to do: introduce high impedance values for buses: buffer device
-    # to do: allow to declare additional ouput port that form a subset
-    # of existing ouput ports: build bus or sigle out wires from a bus
-    # to do: bus, subset, wire
-    # to do: memory
-    # to do: processor
-    # to do: debug tools: find disconnected inputs when display
-    # to do: create port constants vcc and gnd
-
-    # maybe parallel, serial load
-    # select random level at start up / "U" / "0" / "1"
-
-    # to do: add a delay to the reset pulse.
-    # to do: add a clear input to the reset device
-
-    # to do: add standard gate constants for the lut
-
 if __name__ == "__main__":
 
     from sys import version as pythonVersion
@@ -36,33 +19,11 @@ if __name__ == "__main__":
     print("run Python3:" + pythonVersion);
 
     from core import system
-    from library import clock
+    from library import lut
 
     # instantiate simulator
     S = system("version 0.00")
     
-    # # add reset signal
-    # rst = S.createReset(35) # hold reset for 35ns
-
-    # instantiate clock
-    clk0 = S.add(clock(10,5))
-    clk1 = S.add(clock(20,10))
-    clk2 = S.add(clock(40,20))
-
-    # instantiate counter and make network
-    # cnt = S.createCounter()
-    # cnt.addTrigger(clk1.Q) # use clock output 'Q' for counter trigger
-    # cnt.addClear(rst.Q) # use reset output 'Q' for counter reset
-
-    # instantiate LUT as a 3 inputs AND gate
-    #              I0 = 01010101
-    #              I1 = 00110011
-    #              I2 = 00001111
-    # lut1 = S.createLUT('00000001')
-    # lut1.addInput(clk0.Q)
-    # lut1.addInput(clk1.Q)
-    # lut1.addInput(clk2.Q)
-
     # show all devices defined
     S.displayDevices()
 

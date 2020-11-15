@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # file: library.py
 # content: system simulator library
-# created: 2020 november 14 Saturday
+# created: 2020 November 14 Saturday
 # modified:
 # modification:
 # author: roch schanen
@@ -227,9 +227,9 @@ class counter(Device):
 # for n inputs, a 2^n values table must be defined.
 # an input combinaison defines an adress that points to the table.
 # Adress zero points to the left most character in the table string.
-# the least significant bit of the address is defined by the first
-# registered input. the most significant bit of the address is defined
-# by the last input registered.
+# the most significant bit of the address is defined by the first
+# registered input. the least significant bit of the address is
+# defined by the last input registered.
 #
 # examples of standard 2 inputs gates:
 # _OR2   = "0111"
@@ -264,9 +264,9 @@ class lut(Device):
         self.Q.set('U')
         return
 
-    def addInput(self, port):
+    def addInput(self, port, subset = None):
         # instantiate input port
-        newport = inPort(port, f"I{len(self.inports)}")
+        newport = inPort(port, f"I{len(self.inports)}", subset)
         # register port
         self.inports.append(newport)
         return
@@ -281,10 +281,13 @@ class lut(Device):
         # display
         print(f"lut: {name},{size},{table},{value}")
         # detect size mismatch error
-        if not size == len(self.inports):
+        s = ""
+        for p in self.inports:
+            s += p.get()
+        if not size == len(s):
             print(f"  Size mismatch.")
             print(f"    {size} input(s) expected.")
-            print(f"    {len(self.inports)} input(s) found.")
+            print(f"    {len(s)} input(s) found.")
             print(f"  Exiting...")
             exit()
         return
@@ -293,11 +296,12 @@ class lut(Device):
         # get configuration
         size, table = self.configuration
         # get table input address
-        # a, w = 0, 1 << (size-1)
-        a, w = 0, 1
-        for i in self.inports:
-            a += w*['0','1'].index(i.get())
-            w <<= 1
+        s, a, w = "", 0, 1 << (size-1)
+        for p in self.inports:
+            s += p.get()
+        for c in list(s):
+            a += w*['0','1'].index(c)
+            w >>= 1
         # update output value
         self.Q.set(table[a])
         # done
@@ -311,7 +315,7 @@ if __name__ == "__main__":
 
     print("file: library.py")
     print("content: system simulator library")
-    print("created: 2020 november 14 Saturday")
+    print("created: 2020 November 14 Saturday")
     print("author: roch schanen")
     print("comment: device library")
     print("run Python3:" + pythonVersion)
@@ -322,7 +326,7 @@ if __name__ == "__main__":
     S = system("version 0.00")
     
     # instantiate a reset signal
-    rst0 = S.add(reset(105))
+    rst0 = S.add(reset(5))
 
     # instantiate a clock
     clk0 = S.add(clock())
@@ -334,14 +338,19 @@ if __name__ == "__main__":
     cnt0.addTrigger(clk0.Q)
     cnt0.addClear(rst0.Q)
 
-    # instanciate a 2 input lut
-    #            I0 = 0101
-    #            I1 = 0011
-    lut0 = S.add(lut('0001'))
+    # instanciate a 4 input lut
+    #            I0 = 0101010101010101
+    #            I1 = 0011001100110011
+    #            I2 = 0000111100001111
+    #            I4 = 0000000011111111
+    lut0 = S.add(lut('1000100010001000'))
 
     # define lut input network
-    lut0.addInput(clk0.Q) # I0
-    lut0.addInput(rst0.Q) # I1
+    lut0.addInput(cnt0.Q)
+    # lut0.addInput(cnt0.Q, [0])
+    # lut0.addInput(cnt0.Q, [1])
+    # lut0.addInput(cnt0.Q, [2])
+    # lut0.addInput(cnt0.Q, [3])
 
     # show all devices defined
     S.displayDevices()
@@ -350,7 +359,7 @@ if __name__ == "__main__":
     S.openFile()
 
     # run simulator 
-    S.runUntil(200) # 150ns
+    S.runUntil(350) # 150ns
     
     # close export file
     S.closeFile()

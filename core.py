@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # file: core.py
 # content: system simulator core
-# created: 2020 november 14 Saturday
+# created: 2020 November 14 Saturday
 # modified:
 # modification:
 # author: roch schanen
@@ -56,7 +56,7 @@ class system():
         return
 
     # create a new VCD file and make the file header. 
-    def openFile(self, pathName = "./output.vcd"):
+    def openFile(self, pathName = "./output_dev.vcd"):
         # create file
         fh = open(pathName, 'w')
         # make header
@@ -136,8 +136,15 @@ class portCommon():
         N += 1
         return self.signal
 
-    def get(self):
-        return self.state
+    def get(self, subset = None):
+        # return port state as is
+        if not subset:
+            return self.state
+        # return a subset
+        value = ""
+        for i in subset:
+            value += self.state[i]
+        return value
 
     def size(self):
         return len(self.state)
@@ -203,13 +210,17 @@ class outPort(portCommon):
 
 class inPort(portCommon):
 
-    def __init__(self, port, name = None):
-        # linking (adding to the network)
+    def __init__(self, port, name = None, subset = None):
+        # link inport to outport
         self.p = port
+        # select subset
+        self.w = subset
+        if not subset:
+            self.w = list(range(self.p.size()))
         # register port name
         self.name = name
         # initial state
-        self.state = port.get()
+        self.state = port.get(self.w)
         # force update at origin
         self.uptodate = False
         # export signal
@@ -220,11 +231,12 @@ class inPort(portCommon):
         return
 
     def update(self):
-        newvalue = self.p.get()
+        # get state from outport
+        newvalue = self.p.get(self.w)
         # update flag
         self.uptodate = (self.state == newvalue)
         # update value
-        if self.p.size() > 1:
+        if len(newvalue) > 1:
             self.state = newvalue
             return
         # single bit case        
@@ -320,7 +332,7 @@ if __name__ == "__main__":
 
     print("file: core.py")
     print("content: system simulator core")
-    print("created: 2020 july 19 Sunday")
+    print("created: 2020 November 14 Saturday")
     print("author: roch schanen")
     print("comment: core classes")
     print("run Python3:" + pythonVersion)
