@@ -10,22 +10,23 @@
 from time import strftime 
 from sys import exit
 
-# CONSTANTS (COMPATIBILLTY ISSUES)
+# CONSTANTS ##########################################################
 
 SEP = " "    # SIGNAL SEPARATOR
 EOL = "\n"   # END-OF-LINE CODE
 
-# SIGNAL COUNTER
-# the signal counter is used for the VCD file wire names. they are all
-# given the format 'Wn' where 'W' is the letter W and 'n' is an index
-# number. The value of n is given by the
-# counter 'N'.
+# SIGNAL COUNTER #####################################################
+
+# the signal counter is used to define the wires name. the names are
+# given in the format 'W%n' where 'n' is an index. The value of n is
+# determined by the counter 'N' which is incremented every time a new
+# wire is added.
 
 N = 0
 
 # SYSTEM #############################################################
 
-# collect devices, run engine and export data
+# the system class collects devices, runs the engine and exports data
 
 class system():
 
@@ -39,10 +40,7 @@ class system():
         # done
         return
 
-    # getName returns a device name in the form 'Sn' where the string
-    # S is a given generic name and 'n' is an index number. The index
-    # is incremented with every new call. This provides an trivial way
-    # to create unique device names.
+    # find the next index of a generic name
     def getName(self, generic):
         n, k = 0, f"{generic}0"
         while k in self.devicelist.keys():
@@ -51,11 +49,13 @@ class system():
         # found name
         return k
 
+    # display all devices current status
     def displayDevices(self):
+        print(f"System state at {self.time}ns")
         for d in self.devicelist.values(): d.display()            
         return
 
-    # create a new VCD file and make the file header. 
+    # create VCD file and make file header. 
     def openFile(self, pathName = "./output_dev.vcd"):
         # create file
         fh = open(pathName, 'w')
@@ -74,13 +74,13 @@ class system():
         self.fh = fh
         return
 
+    # close VCD file
     def closeFile(self):
         self.fh.close()
         return
 
-    # this generate a new step in the simulation. the step resolution
-    # is 1ns at the moment. it should be made possible to vary this
-    # value. 
+    # generate one step in the simulation. the step resolution is 1ns.
+    # in the future this should be made adjustable.
     def runStep(self):
         # export new state
         exportResult = ""
@@ -101,12 +101,14 @@ class system():
         # done
         return
 
-    # repeat steps until end time is reached
+    # generate steps until "time" value is reached
     def runUntil(self, time):
         while self.time < time:
             self.runStep()
         return
 
+    # add a device to the system
+    # you find the devices in "library.py"
     def add(self, device):
         # get device given name
         name = device.name
@@ -126,16 +128,29 @@ class system():
         # done
         return self.devicelist[name]
 
-# PORTS ##############################################################
+# PORT ###############################################################
+
+# portCommon is the parent class for outPort and inPort
 
 class portCommon():
 
+    # all signals in the VCD file have name format "W%n" where n is
+    # incremented every time a new signal is defined. the name
+    # corresponding can be found in the VCD header.
     def addSignal(self):
         global N
         self.signal = f"W{N}"
         N += 1
         return self.signal
 
+    # get a port state or a subset of a port state. subset is a list
+    # of indices that defines which wire within the port is to be
+    # selected. A port state is define by a string of bits. each bit
+    # can have the values: '0', '1' or 'U' (in the futur, also 'Z').
+    # The left most charater has the highest index. The right most
+    # character has index 0. for example, bit[3] of state "01000" has
+    # the value '1'. all other bits have the value '0'. the state
+    # 'UUUU' has four undefined bits (value 'U').
     def get(self, subset = None):
         # return port state as is
         if not subset:
@@ -143,13 +158,14 @@ class portCommon():
         # return a subset
         value = ""
         for i in subset:
-            value += self.state[i]
+            value += self.state[-i-1]
         return value
 
+    # return the port size: the number of bits
     def size(self):
         return len(self.state)
 
-    # export to VCD format
+    # export port value to VCD file (respecting the VCD format)
     def export(self):
         if self.signal:
             # no change
@@ -164,10 +180,7 @@ class portCommon():
         # no signal
         return ""
 
-# OUTPUT PORTS
-# 'set' asserts the value of the port. The method detects if
-# the asserted value has changed the value of the port and sets
-# the 'uptodate' flag. no change <=> 'uptodate' is true.
+# OUTPUT PORT ########################################################
 
 class outPort(portCommon):
 
@@ -182,6 +195,9 @@ class outPort(portCommon):
         self.signal = None
         return
 
+    # 'set' asserts a newvalue of the port. The method detects if the
+    # asserted value is different from the previous one and sets the
+    # 'uptodate' flag accordingly. 'uptodate' is true if no change.
     def set(self, newvalue):
         # check type is string 
         if not isinstance(newvalue, str):
@@ -202,7 +218,7 @@ class outPort(portCommon):
         # done
         return
 
-# INPUT PORTS
+# INPUT PORTS ########################################################
 # an input port should always be linked to an output port. 'update'
 # sets the new value of the input port from the output port. the
 # rising' and 'falling' edge events are automatically detected. the

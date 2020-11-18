@@ -222,24 +222,14 @@ class counter(Device):
 
 # LUT ################################################################
 
-# the look up table logic allows to built arbitrary gate logic.
-# the number of input must match the table size:
-# for n inputs, a 2^n values table must be defined.
-# an input combinaison defines an adress that points to the table.
-# Adress zero points to the left most character in the table string.
-# the most significant bit of the address is defined by the first
-# registered input. the least significant bit of the address is
-# defined by the last input registered.
-#
-# examples of standard 2 inputs gates:
-# _OR2   = "0111"
-# _AND2  = "0001"
-# _NAND2 = "1110"
-# 
-# examples of standard 3 inputs gates:
-# _OR3   = "01111111"
-# _AND3  = "00000001"
-# _NAND3 = "11111110"
+# the look up table logic allows to built arbitrary gate logic. the
+# number of input must match the table size: for n inputs, a 2^n
+# values table must be defined. an input combinaison defines an adress
+# that points to the table. Adress zero points to the left most
+# character in the table string. the least significant bit of the
+# address is defined by the first registered input. the most
+# significant bit of the address is defined by the last input
+# registered.
 
 class lut(Device):
 
@@ -296,12 +286,12 @@ class lut(Device):
         # get configuration
         size, table = self.configuration
         # get table input address
-        s, a, w = "", 0, 1 << (size-1)
+        s, a, w = "", 0, 1 # << (size-1)
         for p in self.inports:
             s += p.get()
         for c in list(s):
             a += w*['0','1'].index(c)
-            w >>= 1
+            w <<= 1 # w >>= 1
         # update output value
         self.Q.set(table[a])
         # done
@@ -339,18 +329,15 @@ if __name__ == "__main__":
     cnt0.addClear(rst0.Q)
 
     # instanciate a 4 input lut
-    #            I0 = 0101010101010101
-    #            I1 = 0011001100110011
-    #            I2 = 0000111100001111
-    #            I4 = 0000000011111111
-    lut0 = S.add(lut('1000100010001000'))
+    #            I0 = 0101010101010101 [0]
+    #            I1 = 0011001100110011 [1]
+    #            I2 = 0000111100001111 [2]
+    #            I3 = 0000000011111111 [3]
+    lut0 = S.add(lut('1000101010100000'))
 
     # define lut input network
-    lut0.addInput(cnt0.Q)
-    # lut0.addInput(cnt0.Q, [0])
-    # lut0.addInput(cnt0.Q, [1])
-    # lut0.addInput(cnt0.Q, [2])
-    # lut0.addInput(cnt0.Q, [3])
+    lut0.addInput(cnt0.Q, [0, 1])
+    lut0.addInput(cnt0.Q, [2, 3])
 
     # show all devices defined
     S.displayDevices()
@@ -359,7 +346,7 @@ if __name__ == "__main__":
     S.openFile()
 
     # run simulator 
-    S.runUntil(350) # 150ns
+    S.runUntil(650) # 150ns
     
     # close export file
     S.closeFile()
