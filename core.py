@@ -79,8 +79,9 @@ class system():
         self.fh.close()
         return
 
-    # generate one step in the simulation. the step resolution is 1ns.
-    # in the future this should be made adjustable.
+    # generate one step in the simulation
+    # the step resolution is 1ns for now
+    # this should be made a free parameter
     def runStep(self):
         # export new state
         exportResult = ""
@@ -88,7 +89,7 @@ class system():
             exportResult += device.export()
         # export
         if exportResult:
-            self.fh.write(f"#{self.time}")
+            self.fh.write(f"#{self.time:04}")
             self.fh.write(f"{SEP}{exportResult}{EOL}")
         # increase time by one interval (1ns)
         self.time += 1
@@ -146,11 +147,10 @@ class portCommon():
     # get a port state or a subset of a port state. subset is a list
     # of indices that defines which wire within the port is to be
     # selected. A port state is define by a string of bits. each bit
-    # can have the values: '0', '1' or 'U' (in the futur, also 'Z').
-    # The left most charater has the highest index. The right most
-    # character has index 0. for example, bit[3] of state "01000" has
-    # the value '1'. all other bits have the value '0'. the state
-    # 'UUUU' has four undefined bits (value 'U').
+    # can have the values: '0', '1' or 'U' (more states in the futur).
+    # The right most charater has the highest index value. The left
+    # most character has index 0. for example, bit[3] of state "0001"
+    # has the value '1'. all the other bits have the value '0'.
     def get(self, subset = None):
         # return port state as is
         if not subset:
@@ -158,7 +158,7 @@ class portCommon():
         # return a subset
         value = ""
         for i in subset:
-            value += self.state[-i-1]
+            value += self.state[i]
         return value
 
     # return the port size: the number of bits
@@ -174,7 +174,7 @@ class portCommon():
             self.uptodate = True
             # bit string export
             if self.size() > 1:
-                return f"b{self.state} {self.signal}{SEP}"
+                return f"b{self.state[::-1]} {self.signal}{SEP}"
             # single bit export
             return f"{self.state}{self.signal}{SEP}"
         # no signal
@@ -207,7 +207,8 @@ class outPort(portCommon):
         # check size
         if not len(newvalue) == self.size():
             print(f"port.set: value size mismatch:")
-            print(f"  value size is {len(value)}.")
+            print(f'  port.name = {self.name}')
+            print(f"  value size is {len(newvalue)}.")
             print(f"  expected size is {self.size()}.")
             print(f"  exiting...")
             exit()
@@ -339,6 +340,14 @@ class Device():
 
     def display(self):
         pass
+
+# RANDOM BITS GENERATOR ##############################################
+
+# import random generator for initialising registers bits
+from numpy.random import randint
+
+def randbit(size = 1):
+    return f'{randint(size):0{size}b}'
 
 # EXAMPLE ############################################################
 

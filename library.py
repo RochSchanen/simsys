@@ -8,13 +8,15 @@
 # comment: device library
 
 # import core classes
-from core import Device, inPort, outPort
-
-# import random generator for initialising registers bits
-from numpy.random import randint as rnd
+from core import Device, inPort, outPort, randbit
 
 # used to determine the minimum number of bits from an integer value 
 from numpy import log as ln
+from math import ceil
+
+# to fix end of line OS dependence
+from os  import linesep as _EOL
+_EOLN = -len(_EOL) 
 
 # RESET ##############################################################
 
@@ -24,7 +26,9 @@ from numpy import log as ln
 # the reset behaviour is definied by the following parameter 
 # - "width" is the pulse length of the reset signal in ns.
 # the reset signal occurs only once and starts exactly at the same
-# time than the simulation run
+# time than the simulation run.
+# the reset signal is defined from 0ns and has level '0'
+# the complement of the reset signal is also defined from 0ns
 
 class reset(Device):
 
@@ -85,6 +89,8 @@ class reset(Device):
 # a zero phase means that the rising edge of the pulse starts at the
 # beginning of the period. the width plus the phase should not exceed
 # the period.
+# the clock signal is defined from 0ns and has level '0'
+# the complement of the clock signal is also defined from 0ns
 
 class clock(Device):
 
@@ -108,8 +114,8 @@ class clock(Device):
         self.outports.append(self.P)
         self.outports.append(self.Q)
         # set default output ports value
-        self.P.set('1')
-        self.Q.set('0')
+        self.P.set('0')
+        self.Q.set('1')
 
         # done
         return
@@ -131,8 +137,8 @@ class clock(Device):
         # compute new state
         m = (timeStamp-phase) % period
         # update ouputs values
-        self.P.set(['0','1'][m < width])
-        self.Q.set(['1','0'][m < width])
+        self.P.set(['1','0'][m < width])
+        self.Q.set(['0','1'][m < width])
         # done
         return
 
@@ -144,6 +150,9 @@ class clock(Device):
 # synchronous counting: increment at the rising edge of 'trg'
 # the counter value is coerced to modulo 2^n by clearing bits with a
 # weight larger than 2^n-1
+# the counter output is defined from 0ns and has value zero
+# (the initial value of the counter should be investigated)
+# (more input types should be added)
 
 class counter(Device):
 
@@ -151,9 +160,9 @@ class counter(Device):
 
     clr = None # clear
     trg = None # trigger
-    wrt = None # write / count
-    ena = None # enable
-    cse = None # chip select
+    # wrt = None # write / count
+    # ena = None # enable
+    # cse = None # chip select
 
     def __init__(
             self,
@@ -168,9 +177,12 @@ class counter(Device):
         self.Q = outPort(size, "Q")
         # register port
         self.outports.append(self.Q)
-        # set initial output port value
-        self.Q.set(f'{rnd(size):0{size}b}')  # random
-        # to init with unknown value, use "self.Q.set('U'*size)"
+
+        # set output port initial value
+        # self.Q.set('0'*size)      # zero
+        # self.Q.set('U'*size)      # unknown
+        self.Q.set(randbit(size)) # random
+
         return
 
     def addTrigger(self, port):
@@ -193,7 +205,7 @@ class counter(Device):
         # get configuration
         size = self.configuration
         # get current values
-        value = self.Q.get()
+        value = self.Q.get()[::-1]
         # display
         print(f"counter: {name},{size},{value}")
         return
@@ -211,11 +223,11 @@ class counter(Device):
         if self.trg:
             if self.trg.rising:
                 # get incremented state
-                n = int(self.Q.get(), 2) + 1
+                n = int(self.Q.get()[::-1], 2) + 1 
                 # make n string, LSB(size) only
                 newvalue = f'{n:0{size}b}'[-size:]
                 # update output value
-                self.Q.set(newvalue)
+                self.Q.set(newvalue[::-1])
                 return
         # done
         return
@@ -230,6 +242,8 @@ class counter(Device):
 # address is defined by the first registered input. the most
 # significant bit of the address is defined by the last input
 # registered.
+
+# to do : behaviour when some of the inputs are ill-defined
 
 class lut(Device):
 
@@ -250,13 +264,16 @@ class lut(Device):
         self.Q = outPort(1, "Q")
         # register port
         self.outports.append(self.Q)
-        # set default output port value (random bits)
-        self.Q.set('U')
+        # set default output port value 
+        self.Q.set(table[0])    # table value at address zero
+        # self.Q.set('U')       # undefined
+        # self.Q.set(randbit()) # random bit
+
         return
 
     def addInput(self, port, subset = None):
         # instantiate input port
-        newport = inPort(port, f"I{len(self.inports)}", subset)
+        newport = inPort(port, f"A{len(self.inports)}", subset)
         # register port
         self.inports.append(newport)
         return
@@ -269,7 +286,7 @@ class lut(Device):
         # get current value
         value = self.Q.get()
         # display
-        print(f"lut: {name},{size},{table},{value}")
+        print(f"look-up table: {name},{size},{table},{value}")
         # detect size mismatch error
         s = ""
         for p in self.inports:
@@ -285,17 +302,133 @@ class lut(Device):
     def updateOutputPorts(self, timeStamp):
         # get configuration
         size, table = self.configuration
+        # init computation of input address
+        s, a, w = "", 0, 1
+        # collect all bits (least to most significant)
+        for p in self.inports:
+            s += p.get()
+        # compute binary value of s (LSB first)
+        for c in list(s):
+            a += w*['0','1'].index(c)
+            w <<= 1
+        # update output value from table
+        self.Q.set(table[a])
+        # done
+        return
+
+# ROM ################################################################
+
+# the look up table logic allows to built arbitrary gate logic. the
+# number of input must match the table size: for n inputs, a 2^n
+# values table must be defined. an input combinaison defines an adress
+# that points to the table. Adress zero points to the left most
+# character in the table string. the least significant bit of the
+# address is defined by the first registered input. the most
+# significant bit of the address is defined by the last input
+# registered.
+
+class rom(Device):
+
+    genericName = 'rom'
+
+    # the default values makes the rom equivalent to a lut 2-NAND
+    def __init__(
+            self,
+            table = '1110', # NAND table, two bit address expected
+            width = 1,      # data bus width, one bit output (lut)
+            name  = None):  # device name: None, use generic
+
+        # call parent class constructor
+        Device.__init__(self, name)
+        # find number of words
+        words = ceil(len(table)/width)
+        # compute size
+        size = ceil(ln(words)/ln(2))     # size in power of 2
+        table += 'U'*(2**size-words)*width # fill up rom
+        # record configuration
+        self.configuration = size, width, table
+        # instantiate output port
+        self.Q = outPort(width, "Q")
+        # register port
+        self.outports.append(self.Q)
+        # set default output port value
+        self.Q.set(table[0:width]) # undefined
+
+        return
+
+    def addAddress(self, port, subset = None):
+        # instantiate input port
+        newport = inPort(port, f"A{len(self.inports)}", subset)
+        # register port
+        self.inports.append(newport)
+        return
+
+    def display(self):
+        # get name
+        name = self.name
+        # get configuration
+        size, width, table = self.configuration
+        # get current value
+        value = self.Q.get()
+        # display
+        print(f"read only memory: {name},{2**size}x{width},{value}")
+        for i in range(2**size):
+            print(table[i*width:(i+1)*width][::-1])
+        # detect size mismatch error
+        s = ""
+        for p in self.inports:
+            s += p.get()
+        if not size == len(s):
+            print(f"  Size mismatch.")
+            print(f"    {size} input(s) expected.")
+            print(f"    {len(s)} input(s) found.")
+            print(f"  Exiting...")
+            exit()
+        return
+
+    def updateOutputPorts(self, timeStamp):
+        # get configuration
+        size, width, table = self.configuration
         # get table input address
-        s, a, w = "", 0, 1 # << (size-1)
+        s, a, w = "", 0, 1
         for p in self.inports:
             s += p.get()
         for c in list(s):
             a += w*['0','1'].index(c)
-            w <<= 1 # w >>= 1
+            w <<= 1
         # update output value
-        self.Q.set(table[a])
+        self.Q.set(table[a*width:(a+1)*width])
         # done
         return
+
+# GET ROM DATA FROM FILE #############################################
+
+def GetRomFromFile(filename):
+    # read file and collect data
+    rom, b, n = '', None, 0
+    fh = open(filename,'r')
+    l = fh.readline();
+    while l:
+        s = l[:_EOLN].strip()
+        l = fh.readline()
+        n += 1
+        # skip empty line        
+        if not s: continue
+        # skip commented line
+        if s[0] == '#': continue
+        # select numeric representation
+        if s[0] == '%':
+            if s[1:].strip() == 'BINARY': b = 2; continue
+            if s[1:].strip() == 'DECIMAL': b = 10; continue
+            if s[1:].strip() == 'HEXADECIMAL': b = 16; continue
+            print(f'unknown command, current line is {n}')
+            exit()
+        # set default to hexadecimal
+        if not b: b = 16
+        # append data to the table
+        for w in s.split():
+            rom += f'{int(w, b):08b}'[::-1]
+    return rom
 
 ######################################################################
 
@@ -323,8 +456,6 @@ if __name__ == "__main__":
 
     # instantiate a counter
     cnt0 = S.add(counter())
-
-    # define counter input network
     cnt0.addTrigger(clk0.Q)
     cnt0.addClear(rst0.Q)
 
@@ -333,11 +464,16 @@ if __name__ == "__main__":
     #            I1 = 0011001100110011 [1]
     #            I2 = 0000111100001111 [2]
     #            I3 = 0000000011111111 [3]
-    lut0 = S.add(lut('1000101010100000'))
+    lut0 = S.add(lut('1011011101111000'))
+    lut0.addInput(cnt0.Q)
 
-    # define lut input network
-    lut0.addInput(cnt0.Q, [0, 1])
-    lut0.addInput(cnt0.Q, [2, 3])
+    # instantiate rom 16x1 bits
+    rom0 = S.add(rom('1011011101111000')) 
+    rom0.addAddress(cnt0.Q)
+
+    # instantiate rom 16x8 bits
+    rom1 = S.add(rom(GetRomFromFile('rom.txt'), 8)) 
+    rom1.addAddress(cnt0.Q)
 
     # show all devices defined
     S.displayDevices()
