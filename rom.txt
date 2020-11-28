@@ -8,10 +8,10 @@
 
 % HEXADECIMAL
 
-20 21 22 23
-24 25 26 27
-28 29 2A 2B
-2C 2D 2E
+FF EE DD CC
+BB AA 99 88
+77 66 55 44
+33 22 11
 
 # hash starts a comment line
 # an empty line is just skipped
@@ -19,4 +19,4 @@
 # the representation can be BINARY, DECIMAL, HEXADECIMAL
 # the representation must be defined before the data table
 # the default representation is HEXADECIMAL
-# the data width is assumed to be 8 bits (one byte)
+# the data width is fixed at 8 bits (one byte)

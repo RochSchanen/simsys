@@ -15,82 +15,21 @@ from numpy import log as ln
 from math import ceil
 
 # to fix end of line OS dependence
-from os  import linesep as _EOL
+from os import linesep as _EOL
 _EOLN = -len(_EOL) 
-
-# RESET ##############################################################
-
-# a reset has no input
-# a reset has a single output
-# the output value depends only on time
-# the reset behaviour is definied by the following parameter 
-# - "width" is the pulse length of the reset signal in ns.
-# the reset signal occurs only once and starts exactly at the same
-# time than the simulation run.
-# the reset signal is defined from 0ns and has level '0'
-# the complement of the reset signal is also defined from 0ns
-
-class reset(Device):
-
-    genericName = 'rst'
-
-    def __init__(
-            self,
-            width = 1,     # pulse width: 1ns, one cycle
-            name  = None): # device name: None, use generic
-
-        # call Device class constructor
-        Device.__init__(self, name)
-        # record configuration
-        self.configuration = width
-        # instantiate output port
-        self.P = outPort(1, "P")
-        self.Q = outPort(1, "Q")
-        # register port
-        self.outports.append(self.P)
-        self.outports.append(self.Q)
-        # set default output ports value
-        self.P.set('1')
-        self.Q.set('0')
-        # done
-        return
-
-    def display(self):
-        # get name
-        name = self.name
-        # get configuration
-        width = self.configuration
-        # get current values
-        value = f"{self.Q.get()}"
-        # display
-        print(f"reset: {name},{width},{value}")
-        return
-
-    def updateOutputPorts(self, timeStamp):
-        # get configuration
-        width = self.configuration
-        # compute new state
-        m = timeStamp
-        # update output value
-        self.P.set(['0','1'][m < width])
-        self.Q.set(['1','0'][m < width])
-        # done
-        return
 
 # CLOCK ##############################################################
 
-# a clock has no input
-# a clock has a single output
-# the output value depends only on time
+# a clock device has no input and one output
+# the outputs value depends only on time
 # the clock behaviour is definied by the following parameters: 
 # - "period" is the period (1/frequency) in ns.
+# - "shift" is the delay of the clock pulse in ns.
 # - "width" is the pulse length of the clock signal in ns.
-# - "phase" is the delay of the clock pulse in ns.
-# a zero phase means that the rising edge of the pulse starts at the
-# beginning of the period. the width plus the phase should not exceed
-# the period.
-# the clock signal is defined from 0ns and has level '0'
-# the complement of the clock signal is also defined from 0ns
+# a zero shift means that the rising edge of the pulse starts at the
+# beginning of the period. the width value plus the shift value should
+# not exceed a full period. the clock signal is defined from time 0ns
+# and has its level set at start up.
 
 class clock(Device):
 
@@ -99,23 +38,25 @@ class clock(Device):
     def __init__(
             self,
             period = 20,    # clock period: 20ns, 50MHz
+            shift  = 10,    # phase shift : 0ns, in-phase
             width  = 10,    # pulse width : 10ns, symmetrical
-            phase  = 0,     # phase shift : 0ns, in-phase
+            count  = None,  # number of pulses: None is continuous
             name   = None): # device name : None, use generic
 
         # call Device class constructor
         Device.__init__(self, name)
         # record configuration
-        self.configuration = period, width, phase
+        self.configuration = period, width, shift
         # instantiate output ports
-        self.P = outPort(1, "P")
         self.Q = outPort(1, "Q")
         # register port
-        self.outports.append(self.P)
         self.outports.append(self.Q)
+        # setup counter
+        self.count = count
+        # clock phase state
+        self.phase = (0 - shift) % period
         # set default output ports value
-        self.P.set('0')
-        self.Q.set('1')
+        self.Q.set(['0','1'][self.phase < width])
 
         # done
         return
@@ -126,33 +67,46 @@ class clock(Device):
         # get configuration
         period, width, phase = self.configuration
         # get current values
-        value = f"{self.P.get()},{self.Q.get()}"
+        value = f"Q={self.Q.get()}"
         # display
-        print(f"clock: {name},{period},{width},{phase},{value}")
+        print(f"<clock> {name}")
+        print(f"  period: {period}")
+        print(f"  width : {width}")
+        print(f"  phase : {phase}")
+        print(f"  count : {self.count}")
+        print(f"  value : {value}")
         return
 
     def updateOutputPorts(self, timeStamp):
+        # save current Q state for edge detection
+        state = self.Q.get()
         # get configuration
-        period, width, phase = self.configuration
-        # compute new state
-        m = (timeStamp-phase) % period
+        period, width, shift = self.configuration
+        # pulse train completed
+        if self.count == 0: return
+        # compute period phase
+        self.phase = (timeStamp - shift) % period
         # update ouputs values
-        self.P.set(['1','0'][m < width])
-        self.Q.set(['0','1'][m < width])
+        self.Q.set(['0','1'][self.phase < width])
+        # continuous pulse train
+        if self.count == None: return
+        # catch rising event
+        rising = (state, self.Q.get()) == ('0','1')
+        # count down
+        if rising: self.count -= 1
         # done
         return
 
 # COUNTER ############################################################
 
-# size is the number of bits.
+# a counter device has a binary output value.
+# the number of bits is define by the value of size.
 # n bits means counting from 0 to 2^n-1.
 # asynchronous reset: counter is clear whenever 'clr' is low
 # synchronous counting: increment at the rising edge of 'trg'
 # the counter value is coerced to modulo 2^n by clearing bits with a
-# weight larger than 2^n-1
-# the counter output is defined from 0ns and has value zero
-# (the initial value of the counter should be investigated)
-# (more input types should be added)
+# weight larger than 2^n-1.  the counter output is defined from 0ns
+# and has a random value
 
 class counter(Device):
 
@@ -160,9 +114,6 @@ class counter(Device):
 
     clr = None # clear
     trg = None # trigger
-    # wrt = None # write / count
-    # ena = None # enable
-    # cse = None # chip select
 
     def __init__(
             self,
@@ -177,12 +128,10 @@ class counter(Device):
         self.Q = outPort(size, "Q")
         # register port
         self.outports.append(self.Q)
-
         # set output port initial value
-        # self.Q.set('0'*size)      # zero
-        # self.Q.set('U'*size)      # unknown
-        self.Q.set(randbit(size)) # random
+        self.Q.set(randbit(size))
 
+        # done
         return
 
     def addTrigger(self, port):
@@ -205,9 +154,11 @@ class counter(Device):
         # get configuration
         size = self.configuration
         # get current values
-        value = self.Q.get()[::-1]
+        value = f'Q={self.Q.get()[::-1]}'
         # display
-        print(f"counter: {name},{size},{value}")
+        print(f"<counter> {name}")
+        print(f"  size  : {size}")
+        print(f"  value : {value}")
         return
 
     def updateOutputPorts(self, timeStamp):
@@ -232,90 +183,6 @@ class counter(Device):
         # done
         return
 
-# LUT ################################################################
-
-# the look up table logic allows to built arbitrary gate logic. the
-# number of input must match the table size: for n inputs, a 2^n
-# values table must be defined. an input combinaison defines an adress
-# that points to the table. Adress zero points to the left most
-# character in the table string. the least significant bit of the
-# address is defined by the first registered input. the most
-# significant bit of the address is defined by the last input
-# registered.
-
-# to do : behaviour when some of the inputs are ill-defined
-
-class lut(Device):
-
-    genericName = 'lut'
-
-    def __init__(
-            self,
-            table = '1110', # lut table: a 2 inputs NAND gate
-            name  = None):  # device name: None, use generic
-
-        # call parent class constructor
-        Device.__init__(self, name)
-        # compute size
-        size = int(ln(len(table))/ln(2))
-        # record configuration
-        self.configuration = size, table
-        # instantiate output port
-        self.Q = outPort(1, "Q")
-        # register port
-        self.outports.append(self.Q)
-        # set default output port value 
-        self.Q.set(table[0])    # table value at address zero
-        # self.Q.set('U')       # undefined
-        # self.Q.set(randbit()) # random bit
-
-        return
-
-    def addInput(self, port, subset = None):
-        # instantiate input port
-        newport = inPort(port, f"A{len(self.inports)}", subset)
-        # register port
-        self.inports.append(newport)
-        return
-
-    def display(self):
-        # get name
-        name = self.name
-        # get configuration
-        size, table = self.configuration
-        # get current value
-        value = self.Q.get()
-        # display
-        print(f"look-up table: {name},{size},{table},{value}")
-        # detect size mismatch error
-        s = ""
-        for p in self.inports:
-            s += p.get()
-        if not size == len(s):
-            print(f"  Size mismatch.")
-            print(f"    {size} input(s) expected.")
-            print(f"    {len(s)} input(s) found.")
-            print(f"  Exiting...")
-            exit()
-        return
-
-    def updateOutputPorts(self, timeStamp):
-        # get configuration
-        size, table = self.configuration
-        # init computation of input address
-        s, a, w = "", 0, 1
-        # collect all bits (least to most significant)
-        for p in self.inports:
-            s += p.get()
-        # compute binary value of s (LSB first)
-        for c in list(s):
-            a += w*['0','1'].index(c)
-            w <<= 1
-        # update output value from table
-        self.Q.set(table[a])
-        # done
-        return
-
 # ROM ################################################################
 
 # the look up table logic allows to built arbitrary gate logic. the
@@ -335,16 +202,17 @@ class rom(Device):
     def __init__(
             self,
             table = '1110', # NAND table, two bit address expected
-            width = 1,      # data bus width, one bit output (lut)
+            width = 1,      # data bus width, one bit output
             name  = None):  # device name: None, use generic
 
         # call parent class constructor
         Device.__init__(self, name)
         # find number of words
         words = ceil(len(table)/width)
-        # compute size
-        size = ceil(ln(words)/ln(2))     # size in power of 2
-        table += 'U'*(2**size-words)*width # fill up rom
+        # size in power of 2
+        size = ceil(ln(words)/ln(2))
+        # complete table up to 2^size
+        table += 'U'*(2**size-words)*width
         # record configuration
         self.configuration = size, width, table
         # instantiate output port
@@ -352,8 +220,9 @@ class rom(Device):
         # register port
         self.outports.append(self.Q)
         # set default output port value
-        self.Q.set(table[0:width]) # undefined
+        self.Q.set(table[0:width])
 
+        # done
         return
 
     def addAddress(self, port, subset = None):
@@ -369,15 +238,27 @@ class rom(Device):
         # get configuration
         size, width, table = self.configuration
         # get current value
-        value = self.Q.get()
+        value = f"Q={self.Q.get()[::-1]}"
         # display
-        print(f"read only memory: {name},{2**size}x{width},{value}")
+        print(f"<read only memory> {name}")
+        print(f"  size  : {2**size}x{width}")
+        print(f"  value : {value}")
+        s =   f"  table : "
+        # get alignement
+        n = len(s)
+        # scan through table
         for i in range(2**size):
-            print(table[i*width:(i+1)*width][::-1])
-        # detect size mismatch error
+            # build up display string
+            s += f"{table[i*width:(i+1)*width][::-1]} "
+            # end of line above 40 characters
+            if len(s) > 40: print(f"{s}"); s = n*" "
+        # print remain of the table
+        if len(s) > n: print(f"{s}")
+        # build address string
         s = ""
         for p in self.inports:
             s += p.get()
+        # detect size mismatch error
         if not size == len(s):
             print(f"  Size mismatch.")
             print(f"    {size} input(s) expected.")
@@ -448,32 +329,24 @@ if __name__ == "__main__":
     # instantiate a simulator system
     S = system("version 0.00")
     
-    # instantiate a reset signal
-    rst0 = S.add(reset(5))
-
     # instantiate a clock
-    clk0 = S.add(clock())
+    cl = S.add(clock(name = 'Clock'))
+
+    # instantiate a reset from counter
+    rs = S.add(clock(100, 35, 65, count = 1, name = 'Reset'))
 
     # instantiate a counter
-    cnt0 = S.add(counter())
-    cnt0.addTrigger(clk0.Q)
-    cnt0.addClear(rst0.Q)
+    cn = S.add(counter(name = 'Counter'))
+    cn.addTrigger(cl.Q)
+    cn.addClear(rs.Q)
 
-    # instanciate a 4 input lut
-    #            I0 = 0101010101010101 [0]
-    #            I1 = 0011001100110011 [1]
-    #            I2 = 0000111100001111 [2]
-    #            I3 = 0000000011111111 [3]
-    lut0 = S.add(lut('1011011101111000'))
-    lut0.addInput(cnt0.Q)
-
-    # instantiate rom 16x1 bits
-    rom0 = S.add(rom('1011011101111000')) 
-    rom0.addAddress(cnt0.Q)
+    # instantiate rom 4x1 bits: NAND gate
+    nd = S.add(rom('1110', name = 'NAND')) 
+    nd.addAddress(cn.Q, [0, 1])
 
     # instantiate rom 16x8 bits
-    rom1 = S.add(rom(GetRomFromFile('rom.txt'), 8)) 
-    rom1.addAddress(cnt0.Q)
+    rm = S.add(rom(GetRomFromFile('rom.txt'), 8, name = 'ROM')) 
+    rm.addAddress(cn.Q)
 
     # show all devices defined
     S.displayDevices()
@@ -482,7 +355,7 @@ if __name__ == "__main__":
     S.openFile()
 
     # run simulator 
-    S.runUntil(650) # 150ns
+    S.runUntil(500) # 150ns
     
     # close export file
     S.closeFile()
