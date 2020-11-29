@@ -347,7 +347,11 @@ class Device():
 from numpy.random import randint
 
 def randbit(size = 1):
-    return f'{randint(size):0{size}b}'
+    n, s = 0, ""
+    while n < size:
+        s += f'{randint(256):0{8}b}'
+        n += 8
+    return s[0:size]
 
 # EXAMPLE ############################################################
 

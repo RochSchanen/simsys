@@ -67,16 +67,16 @@ class clock(Device):
         # get name
         name = self.name
         # get configuration
-        period, width, phase = self.configuration
+        period, width, shift = self.configuration
         # get current values
         value = f"Q={self.Q.get()}"
         # display
         print(f"<clock> {name}")
-        print(f"  period: {period}")
-        print(f"  width : {width}")
-        print(f"  phase : {phase}")
-        print(f"  count : {self.count}")
-        print(f"  value : {value}")
+        print(f"  period {period}")
+        print(f"  shift {shift}")
+        print(f"  width {width}")
+        print(f"  count {self.count}")
+        print(f"  value {value}")
         return
 
     def updateOutputPorts(self, timeStamp):
@@ -159,8 +159,15 @@ class counter(Device):
         value = f'Q={self.Q.get()[::-1]}'
         # display
         print(f"<counter> {name}")
-        print(f"  size  : {size}")
-        print(f"  value : {value}")
+        if self.trg:
+            print(f"  trigger {self.trg.get()}", end="")
+            if self.trg.rising:
+                print(", rising", end="")
+            print()
+        if self.clr:
+            print(f"  clear {self.clr.get()}")
+        print(f"  size {size}")
+        print(f"  value {value}")
         return
 
     def updateOutputPorts(self, timeStamp):
@@ -242,10 +249,10 @@ class rom(Device):
         value = f"Q={self.Q.get()[::-1]}"
         # display
         print(f"<read only memory> {name}")
-        print(f"  size  : {2**size}x{width}")
-        print(f"  value : {value}")
-        s =   f"  table : "
-        # get alignement
+        print(f"  size {2**size}x{width}")
+        print(f"  value {value}")
+        s =   f"  table "
+        # get alignment
         n = len(s)
         # scan through table
         for i in range(2**size):
@@ -326,7 +333,7 @@ if __name__ == "__main__":
 
     from core import system
 
-    # instantiate a simulator system
+    # instantiate system
     S = system("version 0.00")
     
     # instantiate a clock
