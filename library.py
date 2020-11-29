@@ -20,16 +20,18 @@ _EOLN = -len(_EOL)
 
 # CLOCK ##############################################################
 
-# a clock device has no input and one output
-# the outputs value depends only on time
-# the clock behaviour is definied by the following parameters: 
+# the clock device has no input and one single bit output.
+# the output value depends only on time.
+# the clock behaviour is defined by the following parameters: 
 # - "period" is the period (1/frequency) in ns.
 # - "shift" is the delay of the clock pulse in ns.
 # - "width" is the pulse length of the clock signal in ns.
+# - "count" is the number of clock pulses in cycles.
 # a zero shift means that the rising edge of the pulse starts at the
 # beginning of the period. the width value plus the shift value should
-# not exceed a full period. the clock signal is defined from time 0ns
-# and has its level set at start up.
+# not exceed the period. the clock signal is well-defined at start-up.
+# if the "count" value is left undefined ("None"), the clock pulses
+# continuously until the end of the simulation.
 
 class clock(Device):
 
@@ -38,10 +40,10 @@ class clock(Device):
     def __init__(
             self,
             period = 20,    # clock period: 20ns, 50MHz
-            shift  = 10,    # phase shift : 0ns, in-phase
-            width  = 10,    # pulse width : 10ns, symmetrical
-            count  = None,  # number of pulses: None is continuous
-            name   = None): # device name : None, use generic
+            shift  = 10,    # phase shift : 10ns, half-period
+            width  = 10,    # pulse width : 10ns, half-period
+            count  = None,  # number of pulses: None means continuous
+            name   = None): # device name : None means use generic
 
         # call Device class constructor
         Device.__init__(self, name)
@@ -99,14 +101,14 @@ class clock(Device):
 
 # COUNTER ############################################################
 
-# a counter device has a binary output value.
-# the number of bits is define by the value of size.
-# n bits means counting from 0 to 2^n-1.
-# asynchronous reset: counter is clear whenever 'clr' is low
-# synchronous counting: increment at the rising edge of 'trg'
-# the counter value is coerced to modulo 2^n by clearing bits with a
-# weight larger than 2^n-1.  the counter output is defined from 0ns
-# and has a random value
+# the clock device has one or more inputs and outputs a binary value
+# of n bits. the number of bits is define by the parameter "size".
+# n bits means counting from 0 to 2^n-1. the counter can be cleared at
+# any time by using asynchronous "clr" port. the counter is
+# incremented by one at the rising edge of "trg" port. the counter
+# value is coerced to values modulo 2^n. the coercion is applied by
+# clearing bits with a weight larger than 2^n-1. the counter value is
+# well-defined at start up with a random binary number.
 
 class counter(Device):
 
@@ -185,20 +187,19 @@ class counter(Device):
 
 # ROM ################################################################
 
-# the look up table logic allows to built arbitrary gate logic. the
-# number of input must match the table size: for n inputs, a 2^n
-# values table must be defined. an input combinaison defines an adress
-# that points to the table. Adress zero points to the left most
-# character in the table string. the least significant bit of the
-# address is defined by the first registered input. the most
-# significant bit of the address is defined by the last input
-# registered.
+# the rom device is defined by a binary "table" and a "width". the
+# input ports form a binary address that must match the table size.
+# for n inputs, a 2^n values table must be defined. if the table does
+# not match the size, the table will be extended with 'U' bits. the
+# address "zero" points to the left most character in the binary table
+# string. the least significant bit of the address is defined by the
+# first input port registered. the rom output is updated as soon as
+# the input address is modified.
 
 class rom(Device):
 
     genericName = 'rom'
 
-    # the default values makes the rom equivalent to a lut 2-NAND
     def __init__(
             self,
             table = '1110', # NAND table, two bit address expected
@@ -270,13 +271,12 @@ class rom(Device):
     def updateOutputPorts(self, timeStamp):
         # get configuration
         size, width, table = self.configuration
-        # get table input address
-        s, a, w = "", 0, 1
+        # build address string
+        s = ""
         for p in self.inports:
             s += p.get()
-        for c in list(s):
-            a += w*['0','1'].index(c)
-            w <<= 1
+        # convert string to integer
+        a = int(s[::-1], 2)
         # update output value
         self.Q.set(table[a*width:(a+1)*width])
         # done
