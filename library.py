@@ -290,10 +290,8 @@ def GetRomFromFile(filename):
     fh = open(filename,'r')
     l = fh.readline()
     while l:
-        # s = l[:_EOLN].strip()
-        l = fh.readline()
         s = l.rstrip('\r\n')
-        print(f"-{s}-")
+        l = fh.readline()
         n += 1
         # skip empty line        
         if not s: continue
