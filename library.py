@@ -295,9 +295,9 @@ def GetRomFromFile(filename):
     # read file and collect data
     rom, b, n = '', None, 0
     fh = open(filename,'r')
-    l = fh.readline();
+    l = fh.readline()
     while l:
-        s = l[:_EOLN].strip()
+        s = l.rstrip('\r\n')
         l = fh.readline()
         n += 1
         # skip empty line        
@@ -305,11 +305,12 @@ def GetRomFromFile(filename):
         # skip commented line
         if s[0] == '#': continue
         # select numeric representation
+        print(s)
         if s[0] == '%':
             if s[1:].strip() == 'BINARY': b = 2; continue
             if s[1:].strip() == 'DECIMAL': b = 10; continue
             if s[1:].strip() == 'HEXADECIMAL': b = 16; continue
-            print(f'unknown command, current line is {n}')
+            print(f'unknown command "{s[1:].strip()}", current line is {n}')
             exit()
         # set default to hexadecimal
         if not b: b = 16
