@@ -134,14 +134,14 @@ class counter(Device):
         # done
         return
 
-    def addTrigger(self, port):
+    def linkTrigger(self, port):
         # instantiate input port
         self.trg = inPort(port, "trg")
         # register port
         self.inports.append(self.trg)
         return
 
-    def addClear(self, port):
+    def linkClear(self, port):
         # instantiate input port
         self.clr = inPort(port, "clr")
         # register port
@@ -225,7 +225,7 @@ class rom(Device):
         # done
         return
 
-    def addAddress(self, port, subset = None):
+    def linkAddress(self, port, subset = None):
         # instantiate input port
         newport = inPort(port, f"A{len(self.inports)}", subset)
         # register port
@@ -333,21 +333,21 @@ if __name__ == "__main__":
     # instantiate a clock
     cl = S.add(clock(name = 'Clock'))
 
-    # instantiate a reset from counter
+    # instantiate a reset using a clock
     rs = S.add(clock(100, 35, 65, count = 1, name = 'Reset'))
 
     # instantiate a counter
     cn = S.add(counter(name = 'Counter'))
-    cn.addTrigger(cl.Q)
-    cn.addClear(rs.Q)
+    cn.linkTrigger(cl.Q)
+    cn.linkClear(rs.Q)
 
     # instantiate rom 4x1 bits: NAND gate
     nd = S.add(rom('1110', name = 'NAND')) 
-    nd.addAddress(cn.Q, [0, 1])
+    nd.linkAddress(cn.Q, [0, 1])
 
     # instantiate rom 16x8 bits
     rm = S.add(rom(GetRomFromFile('rom.txt'), 8, name = 'ROM')) 
-    rm.addAddress(cn.Q)
+    rm.linkAddress(cn.Q)
 
     # show all devices defined
     S.displayDevices()
@@ -356,7 +356,7 @@ if __name__ == "__main__":
     S.openFile()
 
     # run simulator 
-    S.runUntil(500) # 150ns
+    S.runUntil(500) # 500ns
     
     # close export file
     S.closeFile()

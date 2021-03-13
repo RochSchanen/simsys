@@ -341,6 +341,9 @@ class Device():
     def display(self):
         pass
 
+    def updateOutputPorts(self, timeStamp):
+        pass
+
 # RANDOM BITS GENERATOR ##############################################
 
 # import random generator for initialising registers bits
