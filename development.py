@@ -7,6 +7,9 @@
 # author: roch schanen
 # comment: system architecture simulator
 
+# NEXT: build up RAM with developing bus + high impedance port
+# NEXT: add delay in the link between inports and outports
+
 from sys import version as pythonVersion
 
 print("file: development.py")
@@ -151,7 +154,7 @@ cn.addTrigger(cl.Q)
 cn.addClear(rs.Q)
 
 # instantiate ram
-nd = S.add(ram('111011', 2)) 
+nd = S.add(ram('1110')) 
 nd.addAddress(cn.Q, [0, 1])
 
 # show all devices defined
