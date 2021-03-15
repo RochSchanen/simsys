@@ -372,19 +372,6 @@ class Device():
     def updateOutputPorts(self, timeStamp):
         pass
 
-
-# RANDOM BITS GENERATOR ##############################################
-
-# import random generator for initialising registers bits
-from numpy.random import randint
-
-def randbit(size = 1):
-    n, s = 0, ""
-    while n < size:
-        s += f'{randint(256):0{8}b}'
-        n += 8
-    return s[0:size]
-
 # EXAMPLE ############################################################
 
 if __name__ == "__main__":

@@ -23,8 +23,8 @@ def randbits(size = 1):
 
 ''' COUNTER ##########################################################
 
-the clock device has a least one input and one set of outputs that
-codes for a binary value. the number of output bits is define by the
+the counter device has a least one input and one set of outputs that
+codes for a binary value. the number of output bits is defined by the
 parameter "size". the output value is incremented by one on each
 rising edge of the input which serves as a clock. a counter of n bits
 is counting from 0 to 2^n-1. the counter value is coerced to values
@@ -33,13 +33,13 @@ larger than 2^n-1.
 
 additionally, optional inputs can be added to further control the
 counter. for example, the counter can be cleared at any time by using
-asynchronous "clr" port. 
+the asynchronous "clr" port. 
 
-the output ports of the counter have a well-defined state at the start
-of the simulation but they code for an arbitrary random value.
+the output ports of the counter are in a well-defined state at the
+start of the simulation but they code for an arbitrary random value.
 
-by standard in this project, all the bits are indexed in the same
-order than the characters in the string. This means that the bit
+by standard in this project, the ouput bits are indexed in the same
+order than the characters in the state string. This means that the bit
 weigths are in the reverse order. For a numerical conversion, we use
 int(STRING[::-1], 2) and for a string conversion, we use
 f'{NUMBER:0{size}b}'.
@@ -147,13 +147,13 @@ if __name__ == "__main__":
     # create devices
     clk = S.add(clock())
     rst = S.add(clock(30, 25, 5, 1))
+    cnt0 = S.add(counter())
     cnt1 = S.add(counter())
-    cnt2 = S.add(counter())
 
     # create links
+    cnt0.ilk_clk(clk.Q)
     cnt1.ilk_clk(clk.Q)
-    cnt2.ilk_clk(clk.Q)
-    cnt2.ilk_clr(rst.Q)
+    cnt1.ilk_clr(rst.Q)
 
     # check setup
     S.displayDevices()
