@@ -99,7 +99,7 @@ if __name__ == "__main__":
     print("content: clock device")
     print("created: 2021 March 14 Sunday")
     print("author: Roch Schanen")
-    print("comment: clock device")
+    print("comment:")
     print("run python3:" + pythonVersion)
 
     from core import system

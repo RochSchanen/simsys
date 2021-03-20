@@ -13,14 +13,6 @@ from core import Device, inPort, outPort
 # random generator
 from numpy.random import randint
 
-# random bits
-def randbits(size = 1):
-    n, s = 0, ""
-    while n < size:
-        s += f'{randint(256):0{8}b}'
-        n += 8
-    return s[0:size]
-
 ''' COUNTER ##########################################################
 
 the counter device has a least one input and one set of outputs that
@@ -53,6 +45,14 @@ class counter(Device):
     clr = None
     clk = None
 
+    # random bits
+    def _randbits(self, size = 1):
+        n, s = 0, ""
+        while n < size:
+            s += f'{randint(256):0{8}b}'
+            n += 8
+        return s[0:size]
+
     def __init__(
             self,
             size = 4,     # counter width: 4bits, 0 to 15
@@ -67,20 +67,20 @@ class counter(Device):
         # register port
         self.outports.append(self.Q)
         # set output ports value
-        self.Q.set(randbits(size))
+        self.Q.set(self._randbits(size))
         # done
         return
 
-    def ilk_clk(self, port):
+    def ilk_clk(self, port, subset = None):
         # instantiate input port
-        self.clk = inPort(port, "clk")
+        self.clk = inPort(port, "clk", subset)
         # register port
         self.inports.append(self.clk)
         return
 
-    def ilk_clr(self, port):
+    def ilk_clr(self, port, subset = None):
         # instantiate input port
-        self.clr = inPort(port, "clr")
+        self.clr = inPort(port, "clr", subset)
         # register port
         self.inports.append(self.clr)
         return
@@ -132,10 +132,10 @@ if __name__ == "__main__":
     from sys import version as pythonVersion
 
     print("file: clock.py")
-    print("content: clock device")
+    print("content: counter device")
     print("created: 2021 March 14 Sunday")
     print("author: Roch Schanen")
-    print("comment: clock device")
+    print("comment:")
     print("run python3:" + pythonVersion)
 
     from core import system
