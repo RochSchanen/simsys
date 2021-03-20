@@ -5,11 +5,7 @@
 # modified:
 # modification:
 # author: roch schanen
-# comment: core classes
-
-# from foundation import dateString
-# from foundation import exitProcess
-# from foundation import EOL
+# comment:
 
 from time import strftime 
 from sys import exit
@@ -18,7 +14,7 @@ def dateString():
     return strftime("%A, %d %b %Y at %H:%M:%S")
 
 def exitProcess():
-    exit()
+    return exit()
 
 EOL = "\n"   
 
@@ -101,6 +97,15 @@ class system():
 
     # to close the VCD file
     def closeFile(self):
+        # build the export string with all updated values 
+        exportResult = ""
+        for device in self.devicelist.values():
+            exportResult += device.export()
+        # export the string
+        if exportResult:
+            self.fh.write(f"#{self.time:04}")
+            self.fh.write(f"{SPACE}{exportResult}{EOL}")
+        # done
         self.fh.close()
         return
 
@@ -398,7 +403,6 @@ if __name__ == "__main__":
     # close export file
     S.closeFile()
 
-
 ''' DOC ##############################################################
 
 DEVICE:
@@ -452,13 +456,4 @@ When inquiring for the state of a port, the bits to be returned and
 their order can be selected using the 'subset' parameter. 'subset' is
 simply a list of indices that define exactly the bits to be selected.
 
-
 '''
-
-
-
-
-
-
-
-

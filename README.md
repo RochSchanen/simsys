@@ -1,40 +1,26 @@
 # README.md
 
-**notes to self**
+**purpose**
 
-    The simsys package is a first attempt at helping building a computer logic from scratch.  
-    The focus is put on reliability rather than speed.  
-    It is to be added to the development of brickworks.  
-    The code will remain fairly simple (if slow) for easy debugging.  
-    The only output so far is a VCD file which records every port values and transitions  
-    The VCD file can easily be displayed using GTKwave (available on many platforms)  
-    Optimisation should come last but should preserve code clarity: it is meant for development, not for productivity.  
+    The simsys project is a coarse attempt at helping to design a computing system from scratch. The focus is largely put on reliability rather than speed optimisation.  It is later to be added to the development of brickworks. The code should remain fairly simple (if slow). The only output so far is a VCD file which records all the ports value and their transitions.  The VCD file can be displayed using GTKwave which is readily available on many platforms.  Optimisation will be last and has to preserve code clarity: it is meant for development and not for productivity.
 
-**some things to do**
+**to do list**
 
-    + *export the last data on closing VCD file*
-    + add parameter to port constructor: default value for the port.
     + introduce high impedance values for buses: buffer device
-    + to do: allow to declare additional output port that form a subset of existing output ports:
-    + build bus or single out wires from a bus
     + bus, subset, wire
-    + memory
-    + processor
-    + debug tools: find disconnected inputs when display
+    + register, memory, ALU, processor
+    + When display, check for device setup
     + create port constants vcc and gnd
-    + maybe parallel, serial load
-    + select random level at start up or "X" or "0" or "1"
-    + add a delay to the reset pulse.
-    + add a clear input to the reset device
-    + add standard gate constants
-    + use integer for single wire subset (if isinstance(subset, int): self.w = [subset])
+    + add parallel, serial load to counter
+    + configure start up value "0", "1", "U" or random
+    + add standard gate tables
     + interactivity with other systems
-    + investigate default values and start up behaviour: this really requires some examination
-    + define more states
-    + use '1' for level high, '0' for level low, 'X' for unknown
-    + use 'Z' for high impedance state, 'L' for pull-down, 'H' for pull-up, 'W' for floating
-    + use 'U' for uninitialized
-    + create read memory function and add simple parameter for rom device
-    + eventually, some delays in the input ports lines and/or in the devices may be added.
-    + can the system system class and the device class be derived one from on another?
-    -
+    + add more state:
+        '1' for level high
+        '0' for level low
+        'U' for unknown
+        'Z' for high impedance state
+        'L' for pull-down
+        'H' for pull-up, 
+    + added delays for wires and devices
+    + add sub devices
