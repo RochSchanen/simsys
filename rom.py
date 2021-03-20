@@ -192,11 +192,13 @@ if __name__ == "__main__":
     clk1 = S.add(clock(10, 5, 5, 1))
     cnt0 = S.add(counter(2))
     rom0 = S.add(rom('00110011', 2))
+    rom1 = S.add(rom('./rom.txt', 8))
 
     # create links
     cnt0.ilk_clk(clk0.Q)
     cnt0.ilk_clr(clk1.Q)
     rom0.ilk_a(cnt0.Q)
+    rom1.ilk_a(cnt0.Q)    
 
     # check setup
     S.displayDevices()

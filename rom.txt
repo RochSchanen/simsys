@@ -9,9 +9,9 @@
 % HEXADECIMAL
 
 FF EE DD CC
-BB AA 99 88
-77 66 55 44
-33 22 11
+#BB AA 99 88
+#77 66 55 44
+#33 22 11
 
 # hash starts a comment line
 # an empty line is just skipped
