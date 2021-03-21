@@ -166,9 +166,6 @@ class rom(Device):
         # done
         return
 
-# GET ROM DATA FROM FILE #############################################
-
-
 if __name__ == "__main__":
 
     from sys import version as pythonVersion

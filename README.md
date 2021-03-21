@@ -25,9 +25,12 @@
     + add more state:
         '1' for level high
         '0' for level low
-        'U' for unknown
-        'Z' for high impedance state
+        'Z' for high impedance, floating
         'L' for pull-down
-        'H' for pull-up, 
+        'H' for pull-up
+        '-' for don't care
+        'U' for undefined
+        'W' for weak
+        'X' for collision
     + added delays for wires and devices
     + add sub devices
