@@ -13,52 +13,51 @@
     > system.**add**(device)  
 
 - portCommon
-    > portCommon.addSignal()
-    > portCommon.get(subset)
-    > portCommon.size()
-    > portCommon.export()
+    > portCommon.**addSignal**()  
+    > portCommon.**get**(subset)  
+    > portCommon.**size**()  
+    > portCommon.**export**()  
 
 - outPort(portCommon)
-    > outPort.__init__(bits, name)
-    > outPort.set(newvalue)
+    > outPort.**\_\_init\_\_**(bits, name)  
+    > outPort.**set**(newvalue)  
 
 - inPort(portCommon)
-    > inPort.__init__(port, name, subset)
-    > inPort.update()
+    > inPort.**\_\_init\_\_**(port, name, subset)  
+    > inPort.**update**()  
 
 - Device
-    > Device.__init__(name)
-    > Device.writeVar(f, t, p)
-    > Device.makeModule(f, t)
-    > Device.export()
-    > Device.display()
-    > Device.updateInputPorts()
-    > Device.updateOutputPorts(timestamp)
+    > Device.**\_\_init\_\_**(name)  
+    > Device.**writeVar**(f, t, p)  
+    > Device.**makeModule**(f, t)  
+    > Device.**export**()  
+    > Device.**display**()  
+    > Device.**updateInputPorts**()  
+    > Device.**updateOutputPorts**(timestamp)  
 
 **clock.py**
 
-    + clock(Device)
-    clock.__init__(period, shift, width, count, name)
-    clock.display()
-    clock.updateOutputPort(timeStamp)
+- clock(Device)
+    > clock.**\_\_init\_\_**(period, shift, width, count, name)  
+    > clock.**display**()  
+    > clock.**updateOutputPort**(timeStamp)  
 
 **counter.py**
 
-    + counter(Device)
-    counter._randbits(size)
-    counter.__init__(size, name)
-    counter.ilk_clk(port, subset)
-    counter.ilk_clr(port, subset)
-    counter.display()
-    counter.updateOutputPort()
+- counter(Device)  
+    > counter.**\_randbits**(size)  
+    > counter.**\_\_init\_\_**(size, name)  
+    > counter.**ilk_clk**(port, subset)  
+    > counter.**ilk_clr**(port, subset)  
+    > counter.**display**()  
+    > counter.**updateOutputPort**()  
 
 **rom.py**
 
-    + rom(Device)
-    rom.tableCheck(table)
-    rom.tableImport(filename)
-    rom.__init__(table, width, name)
-    rom.ilk_a(port, subset)
-    rom.display()
-    rom.updateOutputPort(timeStamp)
-
+- rom(Device)
+    > rom.**tableCheck**(table)  
+    > rom.**tableImport**(filename)  
+    > rom.**\_\_init\_\_**(table, width, name)  
+    > rom.**ilk_a**(port, subset)  
+    > rom.**display**()  
+    > rom.**updateOutputPort**(timeStamp)  
