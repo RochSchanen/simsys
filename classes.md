@@ -3,14 +3,14 @@
 **core.py**
     
 - system
-    > system.__init__(name)
-    > system.getName(generic)
-    > system.displayDevices()
-    > system.openFile(pathName)
-    > system.closeFile()
-    > system.runStep()
-    > system.runUntil(time)
-    > system.add(device)
+    > system.**\_\_init\_\_**(name)  
+    > system.**getName**(generic)  
+    > system.**displayDevices**()  
+    > system.**openFile**(pathName)  
+    > system.**closeFile**()  
+    > system.**runStep**()  
+    > system.**runUntil**(time)  
+    > system.**add**(device)  
 
 - portCommon
     > portCommon.addSignal()
