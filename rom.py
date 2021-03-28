@@ -17,23 +17,38 @@ from math import ceil
 
 ''' ROM ##############################################################
 
-the rom device has one set of inputs ports which codes for the address
-to access and one set of output ports which is the output data. the
-rom data is defined by a binary string starting from bit 0. the string
-is split into groups which size is given by the 'width'  parameter,
-which is also the number of output bits. for an n inputs address,
-a 2^n values table must be defined. That is a binary table of length
-equal to 2^n * width. if the table length does not match the required
-size, the rest of the table will be extended with 'U' bits values. the
-address zero points to the left most character of the string. the
-least significant bit of the address is defined by the first input
-port instanciated. The most significant bit of the address is defined
-by the last input port instanciated. the rom output is updated as soon
-as the input address is updated. simple two inputs gates or more
-complex look-up tables can be easely created using the rom device.
+the rom device has one set of inputs ports, the address, and one set
+of output ports, the data.
+
+the rom data are defined by a character string of '0' and '1'.
+the data bits are indexed in the same order than the characters:
+bit 0 is the first character in the string.
+
+the string is split into groups which size is given by the 'width'
+parameter. This corresponds to the number of output bits.
+
+for an inputs address of size n. the table must contain 2^n values.
+That is a table of total binary length 2^n*width.
+
+in the case the binary table length does not match the required
+length, the rest of the table is automatically extended with 'U'
+values. This allows for some flexibility during project development.
+
+the address zero always points to the left most character of the
+table string.
+
+the least significant bit of the address is defined by the first input
+port that is instanciated. The most significant bit of the address is
+defined by the last input port that is instanciated.
+
+the rom output is updated as soon as the input address is updated.
+
+simple two inputs gates or more complex look-up tables can be easely
+created using the rom device.
+
 if the table string is replaced with a valid file path, the data
 contained in the file will be used as the table. see the 'rom.txt'
-file for an example.
+file for example.
 
 '''
 
@@ -45,7 +60,7 @@ class rom(Device):
     def tableCheck(self, table):
         n = 0
         for c in table:
-            if c in '01U':
+            if c in '01':
                     n += 1
         return n == len(table)
 
@@ -84,7 +99,7 @@ class rom(Device):
 
     def __init__(
             self,
-            table = '1110', # NAND table, two bit address expected
+            table = '1110', # NAND table (a two bit address is expected)
             width = 1,      # data bus width, one bit output
             name  = None):  # device name: None, use generic
         # check if table is a path to the table data
@@ -165,6 +180,8 @@ class rom(Device):
         self.Q.set(table[a*width:(a+1)*width])
         # done
         return
+
+# EXAMPLE ############################################################
 
 if __name__ == "__main__":
 

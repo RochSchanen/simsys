@@ -127,6 +127,8 @@ class counter(Device):
         # done
         return
 
+# EXAMPLE ############################################################
+
 if __name__ == "__main__":
 
     from sys import version as pythonVersion
