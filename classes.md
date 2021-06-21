@@ -47,8 +47,8 @@
 - counter(Device)  
     > counter.**\_randbits**(size)  
     > counter.**\_\_init\_\_**(size, name)  
-    > counter.**i_clk**(port, subset)  
-    > counter.**i_clr**(port, subset)  
+    > counter.**ilk_clk**(port, subset)  
+    > counter.**ilk_clr**(port, subset)  
     > counter.**display**()  
     > counter.**updateOutputPort**()  
 
@@ -58,6 +58,6 @@
     > rom.**tableCheck**(table)  
     > rom.**tableImport**(filename)  
     > rom.**\_\_init\_\_**(table, width, name)  
-    > rom.**i_a**(port, subset)  
+    > rom.**ilk_a**(port, subset)  
     > rom.**display**()  
     > rom.**updateOutputPort**(timeStamp)  
