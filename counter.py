@@ -71,14 +71,14 @@ class counter(Device):
         # done
         return
 
-    def ilk_clk(self, port, subset = None):
+    def i_clk(self, port, subset = None):
         # instantiate input port
         self.clk = inPort(port, "clk", subset)
         # register port
         self.inports.append(self.clk)
         return
 
-    def ilk_clr(self, port, subset = None):
+    def i_clr(self, port, subset = None):
         # instantiate input port
         self.clr = inPort(port, "clr", subset)
         # register port
@@ -153,9 +153,9 @@ if __name__ == "__main__":
     cnt1 = S.add(counter())
 
     # create links
-    cnt0.ilk_clk(clk.Q)
-    cnt1.ilk_clk(clk.Q)
-    cnt1.ilk_clr(rst.Q)
+    cnt0.i_clk(clk.Q)
+    cnt1.i_clk(clk.Q)
+    cnt1.i_clr(rst.Q)
 
     # check setup
     S.displayDevices()

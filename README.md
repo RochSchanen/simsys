@@ -13,6 +13,7 @@
 
 **to do list**
 
+    + change Q to o_Q and same for other outputs. use "i_" for inputs and "o_" for outputs by convention. 
     + introduce high impedance values for buses: buffer device
     + bus, subset, wire
     + register, memory, ALU, processor

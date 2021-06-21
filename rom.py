@@ -25,14 +25,14 @@ the data bits are indexed in the same order than the characters:
 bit 0 is the first character in the string.
 
 the string is split into groups which size is given by the 'width'
-parameter. This corresponds to the number of output bits.
+parameter. This corresponds to the number of output bitsimsys.
 
-for an inputs address of size n. the table must contain 2^n values.
+for an inputs address of size n. the table must contain 2^n valuesimsys.
 That is a table of total binary length 2^n*width.
 
 in the case the binary table length does not match the required
 length, the rest of the table is automatically extended with 'U'
-values. This allows for some flexibility during project development.
+valuesimsys. This allows for some flexibility during project development.
 
 the address zero always points to the left most character of the
 table string.
@@ -79,7 +79,7 @@ class rom(Device):
             # skip empty line     
             if not s: continue
             # strip heading spaces
-            s = s.lstrip(' ')
+            s = simsys.lstrip(' ')
             # skip commented line
             if s[0] == '#': continue
             # select numeric representation (before data)
@@ -93,7 +93,7 @@ class rom(Device):
             # set default to hexadecimal
             if not b: b = 16
             # append data to the table
-            for w in s.split():
+            for w in simsys.split():
                 rom += f'{int(w, b):08b}'[::-1]
         return rom
 
@@ -119,17 +119,17 @@ class rom(Device):
         # instantiate output port
         self.Q = outPort(width, "Q")
         # register port
-        self.outports.append(self.Q)
+        self.outportsimsys.append(self.Q)
         # set default output port value
         self.Q.set(table[0:width])
         # done
         return
 
-    def ilk_a(self, port, subset = None):
+    def i_a(self, port, subset = None):
         # instantiate input port
         newport = inPort(port, f"A{len(self.inports)}", subset)
         # register port
-        self.inports.append(newport)
+        self.inportsimsys.append(newport)
         return
 
     def display(self):
@@ -199,25 +199,25 @@ if __name__ == "__main__":
     from counter import counter
 
     # build system
-    S = system("version 0.00")
+    simsys = system("version 0.00")
     
     # create devices
-    clk0 = S.add(clock())
-    clk1 = S.add(clock(10, 5, 5, 1))
-    cnt0 = S.add(counter(2))
-    rom0 = S.add(rom('00110011', 2))
-    rom1 = S.add(rom('./rom.txt', 8))
+    clk0 = simsys.add(clock())
+    clk1 = simsys.add(clock(10, 5, 5, 1))
+    cnt0 = simsys.add(counter(2))
+    rom0 = simsys.add(rom('00110011', 2))
+    rom1 = simsys.add(rom('./rom.txt', 8))
 
     # create links
-    cnt0.ilk_clk(clk0.Q)
-    cnt0.ilk_clr(clk1.Q)
-    rom0.ilk_a(cnt0.Q)
-    rom1.ilk_a(cnt0.Q)    
+    cnt0.i_clk(clk0.Q)
+    cnt0.i_clr(clk1.Q)
+    rom0.i_a(cnt0.Q)
+    rom1.i_a(cnt0.Q)    
 
     # check setup
-    S.displayDevices()
+    simsys.displayDevices()
 
     # simulate
-    S.openFile()
-    S.runUntil(200)
-    S.closeFile()
+    simsys.openFile()
+    simsys.runUntil(200)
+    simsys.closeFile()
