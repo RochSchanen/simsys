@@ -9,7 +9,7 @@
     so far is a VCD file which records all the ports value and their
     transitions.  The VCD file can be displayed using GTKwave which is readily
     available on many platforms.  Optimisation will be last and has to preserve
-    code clarity: it is meant for development and not for productivity.
+    code clarity: it is meant for learning and not for productivity.
 
 **to do list**
 
