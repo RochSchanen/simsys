@@ -35,3 +35,5 @@
         'X' for collision
     + added delays for wires and devices
     + add sub devices
+
+test-check sublime merge
