@@ -1,0 +1,7 @@
+
+*.pyc
+
+*.vcd
+
+*.sublime-project
+*.sublime-workspace
