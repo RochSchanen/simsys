@@ -36,4 +36,4 @@
     + added delays for wires and devices
     + add sub devices
 
-check 1
+split Core from Files
