@@ -35,5 +35,3 @@
         'X' for collision
     + added delays for wires and devices
     + add sub devices
-
-split Core from Files
