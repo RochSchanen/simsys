@@ -36,4 +36,4 @@
     + added delays for wires and devices
     + add sub devices
 
-test-check sublime merge
+check 1
