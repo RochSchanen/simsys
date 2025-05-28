@@ -1,0 +1,456 @@
+#!/usr/bin/python3
+# file: core.py
+# content: system simulator core
+# created: 2020 November 14 Saturday
+# modified:
+# modification:
+# author: roch schanen
+# comment:
+
+from sys import exit
+def exitProcess():
+    return exit()
+
+# CHARACTERS SYMBOLS (system dependent?)
+
+EOL, SPC, NUL = "\n", " ", ""   
+
+class VCDfile():
+
+    def __init__(self, sh, fp = "./export.vcd"):
+        # create file handle if path is given
+        fh = self.create(fp) if fp else None
+        # record conficguration
+        self.config = sh, fh, 0
+        # done
+        return
+
+    def create(self, dev, fp):
+        # load configuration
+        sh, fh, N = self.config
+        # close handle if active
+        if fh: fh.close()
+        # create file (new file)
+        fh = open(fp, 'w')
+        # make header
+        fh.write(f"$version SimSys 0.0 $end{EOL}")
+        fh.write(f"$date {sh.date} $end{EOL}")
+        fh.write(f"$timescale 1ns $end{EOL}")
+        # make modules and signals
+        fh.write(f"$scope module SYSTEM $end{EOL}")
+        # recursively build the list of devices in the system
+        for d in sh.devicelist.values(): d.makeModule()        # !!!!!!!!!!!
+        fh.write(f"$upscope $end{EOL}")
+        # close header
+        fh.write(f"$enddefinitions $end{EOL}")
+        # done
+        return fh
+
+    def export(self):
+        # load configuration
+        sh, fh, N = self.config
+        # recursively build the export string
+        expstr = ""
+        for d in sh.devicelist.values(): expstr += d.export()
+        # check for empty string
+        if expstr is NUL: return
+        # export the string
+        fh.write(f"#{sh.time:04}")
+        fh.write(f"{SPC}{expstr}{EOL}")
+        # done
+        return
+
+    def close(self):
+        # export current state
+        self.export()
+        # close file
+        fh.close()
+        # save configuration
+        self.config = sh, fh, N
+        return
+
+# # SYSTEM #############################################################
+
+# # the system class collects devices, runs the engine and exports the results
+
+# class system():
+
+#     def __init__(self, name):
+#         # devicelist contains all the devices to simulate
+#         self.devicelist = {}
+#         # name is the system name
+#         # usually just the version number
+#         self.name = name
+#         # time is the current simulation time
+#         # it varies thoughout the simulation execution
+#         self.time = 0
+#         # date is the date-time at the start of the simulation 
+#         from time import strftime
+#         date = strftime("%A, %d %b %Y at %H:%M:%S")
+#         print(f"create system {name}\n{date}")
+#         self.date = date
+#         # create file
+#         self.file = VCDfile(self)
+#         # done
+#         return
+
+#     # to find the next index of a generic name:
+#     # when no name is explicitely given to a device a generic name
+#     # with an appended number needs to be generated. this method
+#     # finds a new index that has not been used yet 
+#     def getName(self, generic):
+#         n, k = 0, f"{generic}0"
+#         while k in self.devicelist.keys():
+#             n += 1
+#             k = f"{generic}{n}"
+#         # found name
+#         return k
+
+#     # to display the state of all the devices in the system:
+#     def displayDevices(self):
+#         print(f"System state at {self.time}ns")
+#         for d in self.devicelist.values(): d.display()            
+#         return
+
+#     # to generate one step in the simulation:
+#     # the step resolution is 1ns by default
+#     # this should be later made a parameter
+#     def runStep(self):
+#         # export state to file
+#         self.file.export()
+#         # increase time by one interval (1ns)
+#         self.time += 1
+#         # update device outputs
+#         for device in self.devicelist.values():
+#             device.updateOutputPorts(self.time)
+#         # update device inputs
+#         for device in self.devicelist.values():
+#             device.updateInputPorts()        
+#         # done
+#         return
+
+#     # to generate steps until 'time' is reached:
+#     # this can be used multiple times, each time with a 'time' value 
+#     # larger than the previous. this allows for executing extra code
+#     # at specific moment of the simulation 
+#     def runUntil(self, time):
+#         while self.time < time:
+#             self.runStep()
+#         return
+
+#     # to add a device to the system:
+#     # you should find ready designed devices in other files
+#     # or make your own (this is the main purpose of this project)
+#     def add(self, device):
+#         # get device given name
+#         name = device.name
+#         # check for duplicate
+#         if name in self.devicelist.keys():
+#             print(f"system.create({name}): duplicated name.")
+#             print(f"  name {name} already used.")
+#             print(f"  exiting...")
+#             exitProcess()
+#         # make generic name
+#         if name == None:
+#             name = self.getName(device.genericName)
+#             # record new name
+#             device.name = name
+#         # register new device
+#         self.devicelist[name] = device
+#         # done
+#         return self.devicelist[name]
+
+# # PORT ###############################################################
+
+# # portCommon is the common class for outPort and inPort classes
+
+# class portCommon():
+
+#     # to add a new signal:
+#     # all signals in the VCD file have the same name format "W%n"
+#     # where n is incremented every time a new signal is created. the
+#     # name corresponding to each "W%n" is to be found in the VCD
+#     # header.
+#     def addSignal(self):
+#         global N
+#         self.signal = f"W{N}"
+#         N += 1
+#         return self.signal
+
+#     # to get a port state or a subset of a port state:
+#     def get(self, subset = None):
+#         # return port full state
+#         if not subset:
+#             return self.state
+#         # return only a subset
+#         value = ""
+#         for i in subset:
+#             value += self.state[i]
+#         return value
+
+#     # to return the port size:
+#     # this is exactly the number of bits
+#     def size(self):
+#         return len(self.state)
+
+#     # to export the port value to the VCD file:
+#     # the VCD file format is carefully respected
+#     def export(self):
+#         # if the port has no signal name, an empty string is retuned
+#         if self.signal:
+#             # if no change has happened, an empty string is retuned
+#             if self.uptodate: return ""
+#             # set 'update' flag
+#             self.uptodate = True
+#             # multiple bits export
+#             if self.size() > 1:
+#                 return f"b{self.state[::-1]} {self.signal}{SPC}"
+#             # single bit export
+#             return f"{self.state}{self.signal}{SPC}"
+#         # no signal
+#         return ""
+
+# # OUTPUT PORT ########################################################
+
+# class outPort(portCommon):
+
+#     def __init__(self, bits = 1, name = None):
+#         # initialise to undefined value 'U'
+#         self.state = 'U'*bits
+#         # register port name
+#         self.name = name
+#         # force update at origin
+#         self.uptodate = False
+#         # export signal
+#         self.signal = None
+#         return
+
+#     # 'set' asserts a newvalue of the port. The method detects if the
+#     # asserted value is different from the previous one and sets the
+#     # 'uptodate' flag accordingly. 'uptodate' is true if no change.
+#     def set(self, newvalue):
+#         # check type is string 
+#         if not isinstance(newvalue, str):
+#             print(f"port.set: value must be of string type.")
+#             print(f"  exiting...")
+#             exitProcess()
+#         # check size
+#         if not len(newvalue) == self.size():
+#             print(f"port.set: value size mismatch:")
+#             print(f'  port.name = {self.name}')
+#             print(f"  value size is {len(newvalue)}.")
+#             print(f"  expected size is {self.size()}.")
+#             print(f"  exiting...")
+#             exitProcess()
+#         # set flag
+#         self.uptodate = (self.state == newvalue)
+#         # update value
+#         self.state = newvalue
+#         # done
+#         return
+
+# # INPUT PORTS ########################################################
+# # an input port should always be linked to an output port. 'update'
+# # sets the new value of the input port from the output port. the
+# # rising' and 'falling' edge events are automatically detected. the
+# # 'uptodate' flag is also set accordingly.
+
+# class inPort(portCommon):
+
+#     def __init__(self, port, name = None, subset = None):
+#         # link inport to outport
+#         self.p = port
+#         # select subset
+#         self.w = subset
+#         if not subset: self.w = list(range(self.p.size()))
+#         # register port name
+#         self.name = name
+#         # initial state
+#         self.state = port.get(self.w)
+#         # force update at origin
+#         self.uptodate = False
+#         # export signal
+#         self.signal = None
+#         # clear edge events        
+#         self.rising  = False
+#         self.falling = False
+#         return
+
+#     def update(self):
+#         # get state from outport
+#         newvalue = self.p.get(self.w)
+#         # update flag
+#         self.uptodate = (self.state == newvalue)
+#         # update value
+#         if len(newvalue) > 1:
+#             self.state = newvalue
+#             return
+#         # single bit case        
+#         self.rising  = False
+#         self.falling = False
+#         # detect rising edge
+#         if (self.state, newvalue) == ('0','1'):
+#             self.rising = True                 
+#         # detect falling edge
+#         if (self.state, newvalue) == ('1','0'):
+#             self.falling = True
+#         # update state
+#         self.state = newvalue                 
+#         return
+
+# # DEVICE #############################################################
+
+# # the 'Device' class is a template class. 'writeVar' is used to format
+# # the header of the VCD file. 'makeModule' write this device header
+# # for the VCD file. 
+
+# class Device():
+
+#     genericName = "dev"
+
+#     def __init__(self, name):
+#         self.name = name
+#         self.inports  = []
+#         self.outports = []
+#         self.exports  = []
+#         return
+
+#     def writeVar(self,
+#             f,  # file
+#             t,  # tab level
+#             p): # port
+#         # write port signal
+#         if p.name:
+#             # register port in export list
+#             self.exports.append(p)
+#             # get size
+#             size = p.size()
+#             # get signal name
+#             label = f"{self.name}_{p.name}"
+#             if size > 1:
+#                 label += f"[{size-1}:0]"
+#             # get signal identifier
+#             signal = p.addSignal()
+#             f.write(f"{t}\t$var")    # header
+#             f.write(f" wire {size}") # signal size
+#             f.write(f" {signal}")    # signal identifier
+#             f.write(f" {label}")     # signal name
+#             f.write(f" $end{EOL}")   # tail
+#         return
+
+#     def makeModule(self,
+#             f,  # file
+#             t): # tab level
+#         # get module name
+#         name = self.name
+#         # tab alignment
+#         tab  = '\t'*(t+1)
+#         # write header
+#         f.write(f"{tab}$scope module {name} $end{EOL}")
+#         # write variables (inputs)
+#         for p in self.inports:
+#             self.writeVar(f, tab, p)
+#         # write variables (outputs)
+#         for p in self.outports:
+#             self.writeVar(f, tab, p)
+#         # write tail
+#         f.write(f"{tab}$upscope $end{EOL}")
+#         # done
+#         return
+
+#     def export(self):
+#         exportResult = ""
+#         for p in self.exports:
+#             exportResult += p.export()
+#         return exportResult
+
+#     def display(self):
+#         pass
+
+#     def updateInputPorts(self):
+#         for p in self.inports: p.update()
+#         return
+
+#     def updateOutputPorts(self, timeStamp):
+#         pass
+
+# # EXAMPLE ############################################################
+
+# if __name__ == "__main__":
+
+#     from sys import version as pythonVersion
+
+#     print("file: core.py")
+#     print("content: system simulator core")
+#     print("created: 2020 November 14 Saturday")
+#     print("author: roch schanen")
+#     print("comment: core classes")
+#     print("run Python3:" + pythonVersion)
+
+#     # instantiate simulator
+#     S = system("version 0.00")    
+
+#     # show all devices defined
+#     S.displayDevices()
+
+#     # open export file
+#     S.openFile()    
+#     # run simulator    
+#     S.runUntil(500)
+#     # close export file
+#     S.closeFile()
+
+''' DOC ##############################################################
+
+DEVICE:
+
+the inner dynamics of a device is to determine the values of its
+outputs from the values of its inputs. the dynamics is coded in the
+'updateOutputPorts()' method. Given the values of the inputs and some
+other internal variables, this method calculates what should be the
+values of its outputs.
+
+the inputs and outputs are instanciated by PORTS structures.
+
+PORTS:
+
+the role of the ports is to interconnect the devices together.
+However, they also play a role in the dynamics of the system.
+
+A step in the simulation is separated into two parts:
+
+1) update all the devices inputs from all the devices outputs. This is
+the time evolution related to the interconnections between all the
+devices. This is here that time delays in wire propagations can be
+implemented.
+
+2) update all the devices outputs form their respective inputs. This
+is the time evolution of the device internal structure. This is here
+that delays due to the inner workings of the device can be
+implemented. 
+
+This separation into two distinctive parts prevent some infinite
+recursive loop to occur.
+
+An Input/Output port implementation (including a high impedance state)
+needs to be implemented yet.
+
+'self.state':
+
+The state of a port is defined by the 'self.state' variable. It is a
+string of characters that represents each values of the port bits.
+The length of the string is the size of the port, the number of bits.
+For the moment, the characters '0', '1' and 'U' are used.
+the special value 'U' is for unknown. This should be used for the
+detection of flaws in the design.
+
+all the bits are indexed in the same order than the characters in the
+string. This means that the bit weigths are in the reverse order. For
+numerical conversion, use int(STRING[::-1], 2) and for string
+conversion, use f'{NUMBER:0{size}b}'.
+
+When inquiring for the state of a port, the bits to be returned and
+their order can be selected using the 'subset' parameter. 'subset' is
+simply a list of indices that define exactly the bits to be selected.
+
+'''
