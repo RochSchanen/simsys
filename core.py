@@ -3,27 +3,44 @@
 # created: 2025 Mai 28 Wednesday
 # author: roch schanen
 
+### SYMBOLS
+EOL, SPC, NUL, TAB = "\n", " ", "", "\t"
+
+### BLOCK
+def filterBlock(fh, Block, tab):
+    b = ""
+    for l in Block[len(EOL):].split(EOL):
+        b += TAB + l.lstrip() + EOL
+    return b
+
+### PORTS
 class logic_port():
 
     # signal count for signal names
     sn = 0
 
     # constructor
-    def __init__(self):
+    def __init__(self, n = None, bw = None, lp = None, ss = None):
         # record signal name
         self.sg = f"W{self.sn}"
         # increment global signal count
         logic_port.sn += 1
+        # record port name
+        self.n = n
         # declare port state
         self.ps = None
+        # set port state
+        if bw: self.set('U'*bw)
+        # get target port size
+        n = lp.size() if lp else None
+        # build port subset list
+        if lp: self.ss = list(range(n)) if ss is None else ss
+        # record target
+        self.lp = lp
+        # init state
+        if lp: self.update()
         # done
         return
-
-    def get(self, ss = None):
-        # return full port state
-        if ss is None: return self.ps
-        # return subset of port state
-        return "".join([self.ps[i] for i in ss])
 
     def size(self):
         return len(self.ps)
@@ -33,52 +50,15 @@ class logic_port():
         self.ps = ns
         return
 
-    def export(self):
-        # check for update
-        if self.utd: return f""
-        # set flag
-        self.utd = True
-        # multiple bits case
-        if self.size() > 1:
-            return f"b{self.ps[::-1]} {self.sg}{SPC}"
-        # single bit case
-        return f"{self.ps}{self.sg}{SPC}"
-
-class logic_port_output(logic_port):
-
-    gn = "Q"
-
-    # constructor
-    def __init__(self, bw = 1):
-        # call logic_port constructor
-        logic_port.__init__(self)
-        # set port state
-        self.set('U'*bw)
-        # done
-        return
-
-class logic_port_input(logic_port):
-
-    gn = "P"
-
-    # constructor
-    def __init__(self, lpo, ss = None):
-        # call logic_port constructor
-        logic_port.__init__(self)
-        # get target port size
-        n = lpo.size()
-        # build port subset list
-        self.ss = list(range(n)) if ss else ss
-        # record target
-        self.lpo = lpo
-        # init state
-        self.update()
-        # done
-        return
+    def get(self, ss = None):
+        # return full port state
+        if ss is None: return self.ps
+        # return subset of port state
+        return "".join([self.ps[i] for i in ss])
 
     def update(self):
         # get output port state
-        ns = self.lpo.get(self.ss)
+        ns = self.lp.get(self.ss)
         # (to do: insert wire delay here...)
         # single bit case
         if len(ns) == 1:
@@ -89,138 +69,164 @@ class logic_port_input(logic_port):
         # done
         return
 
+    def export(self):
+        # un-exported
+        if self.n is None: return f""
+        # check for update
+        if self.utd: return f""
+        # set flag
+        self.utd = True
+        # multiple bits case
+        if self.size() > 1:
+            return f"b{self.ps[::-1]} {self.sg}{SPC}"
+        # single bit case
+        return f"{self.ps}{self.sg}{SPC}"
+
+    def declare(self, tb, pn = ""):
+        if self.n is None: return f""
+        label = f"{pn}_{self.n}"
+        if self.size() > 1:
+            label += f"[{self.size()-1}:0]"
+        return f"{'\t'*tb}$var wire {port.size()} {port.sg} {label} $end{EOL}"
+
+### DEVICES
 class logic_device():
 
     gn = "D"
 
-    def __init__(self):
+    # constructor
+    def __init__(self, n = None):
         # declare device contents
-        self.i = {} # inputs
-        self.o = {} # outputs
-        self.d = {} # devices
-        # call user init
+        self.i = [] # inputs
+        self.o = [] # outputs
+        self.d = [] # sub-devices
+        # record name
+        self.n = n
+        # sub class init
         self.start()
         #done
         return
 
     def export(self):
+        # un-exported
+        if self.n is None: return f""
+        # build export string
         expstr = ""
-        for i in self.i.values(): expstr += i.export()
-        for o in self.o.values(): expstr += o.export()
-        for d in self.d.values(): expstr += d.export()
+        # go through all device contents
+        for i in self.i: expstr += i.export()
+        for d in self.d: expstr += d.export()
+        for o in self.o: expstr += o.export()
         return expstr
 
-    # this is a template to be over-written
-    def start(self):
-        pass        
-
-    # display this device (possibly sub-devices)
-    def display(self):
-        pass
+    # def declare(self, tb, pn):
+    #     # write header
+    #     s = f"{'\t'*tb}\t$scope module {self.n} $end{EOL}"
+    #     # write variables (inputs)
+    #     for p in self.inports:
+    #         self.writeVar(f, tab, p)
+    #     # write variables (outputs)
+    #     for p in self.outports:
+    #         self.writeVar(f, tab, p)
+    #     # write tail
+    #     f.write(f"{tab}$upscope $end{EOL}")
+    #     # done
+    #     return
 
     def update_input_ports(self):
-        # update all inputs for this device
-        for i in self.i.values(): i.update()
-        # update all inputs for the sub devices
-        for d in self.d.values(): d.update_input_ports()
+        # update inputs ports first
+        for i in self.i: i.update()
+        # update sub devices
+        for d in self.d: d.update_input_ports()
         # done
         return
 
     # this is a template to be over-written
     def update_output_ports(self, timeStamp):
-        
-        # update all sub-devices outputs
-        for d in self.d.values():
-            self.d.update_outputs(timeStamp)
-
-        """ compute this device output ports from this
-        device inputs, sub-devices outputs, timestamp,
-        and other internal structure.
-        """
-
+        # update sub-devices ouput ports first
+        for d in self.d: self.d.update_outputs(timeStamp)
+        # sub class update
+        self.update(timeStamp)
         # done
         return
 
-    # add an element (device, port, ...)
-    # use defined name or generic
-    def add(self):
-        # check for duplicates
-        # add name to 
+    def name_duplicate(L, name):
+        # bypass no name
+        if name is None: return f""
+        # build name list
+        N = [l.n for l in L]
+        nc, ns = 0, f"{name}"
+        while ns in N:
+            ns = f"{name}{nc}"
+            nc += 1
+        return ns
+
+    def add_input_port(self, lport, name = None):
+        n = self.name_duplicate(self.i, name)
+        i = logic_port(n, lp = lport)
+        self.i.append(i)
+        return i
+
+    def add_output_port(self, width, name = None, lport = None):
+        n = self.name_duplicate(self.o, name)
+        o = logic_port(n, bw = width, lp = lport)
+        self.o.append(o)
+        return o
+
+    def add_sub_device(self, name = None):
+        n = self.name_duplicate(self.d, name)
+        d = logic_device(n)
+        self.d.append(d)
+        return d
+
+    ### sub class methods ###
+
+    # build up device internal structure
+    # during sub class instantiation.
+    def start(self):
+        pass        
+
+    # display device structure and state
+    # whenever.
+    def display(self):
         pass
 
-    add names
+    # device output ports updates:
+    # from this inputs, sub-devices outputs, timestamp,
+    # or any other internal parameters.
+    def update(self, timeStamp):
+        pass
 
+### SYSTEM
+class logic_system(logic_device):
 
+    def start(self):
 
+        # setup date 
+        from time import strftime
+        date = strftime("%A, %d %b %Y at %H:%M:%S")
+        print(f"record date: {date}\n")
 
+        # setup time (time units are in ns)
+        print(f"reset time")
+        self.time = 0
+        
+        print(f"open file")
+        fp = "./export.vcd"
 
+        # create new file
+        fh = open(fp, 'w')       
+        # start file header
+        fh.write(f"$version generated by simsys.py $end{EOL}")
+        fh.write(f"$date {date} $end{EOL}")
+        fh.write(f"$timescale 1ns $end{EOL}")
+        # make system module
+        fh.write(f"$scope module SYSTEM $end{EOL}")
+        # recursively build the sub devices tree and signals
+        for d in self.d: self.makeModule(d)
+        # end system module
+        fh.write(f"$upscope $end{EOL}")
+        # end file header
+        fh.write(f"$enddefinitions $end{EOL}")
 
-
-
-
-
-
-
-
-
-
-# SYMBOLS
-# EOL, SPC, NUL = "\n", " ", ""   
-
-# class VCDfile():
-
-#     def __init__(self, sh, fp = "./export.vcd"):
-#         # create file handle if path is given
-#         fh = self.create(fp) if fp else None
-#         # record conficguration
-#         self.config = sh, fh, 0
-#         # done
-#         return
-
-#     def create(self, fp):
-#         # load configuration
-#         sh, fh, N = self.config
-#         # close handle if active
-#         if fh: fh.close()
-#         # create file (new file)
-#         fh = open(fp, 'w')
-#         # make header
-#         fh.write(f"$version Generated by simsys.py $end{EOL}")
-#         fh.write(f"$date {sh.date} $end{EOL}")
-#         fh.write(f"$timescale 1ns $end{EOL}")
-#         # make modules and signals
-#         fh.write(f"$scope module SYSTEM $end{EOL}")
-#         # recursively build the list of devices in the system
-#         for d in sh.devicelist.values(): d.makeModule()     ### !!!
-#         fh.write(f"$upscope $end{EOL}")
-#         # close header
-#         fh.write(f"$enddefinitions $end{EOL}")
-#         # done
-#         return fh
-
-#     def export(self):
-#         # load configuration
-#         sh, fh, N = self.config
-#         # recursively build the export string
-#         expstr = ""
-#         for d in sh.devicelist.values(): expstr += d.export()
-#         # check for empty string
-#         if expstr is NUL: return
-#         # export the string
-#         fh.write(f"#{sh.time:04}")
-#         fh.write(f"{SPC}{expstr}{EOL}")
-#         # done
-#         return
-
-#     def close(self):
-#         # export current state
-#         self.export()
-#         # close file
-#         fh.close()
-#         # save configuration
-#         self.config = sh, fh, N
-#         return
-
-
-
-
+        # done
+        return
