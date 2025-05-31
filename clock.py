@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 # file: clock.py
 # content: clock
 # created: 2021 March 14 Sunday
@@ -57,7 +56,7 @@ class clock(logic_device):
 
     def display(self):
         # get name
-        name = self.n
+        name = self.name
         # get configuration
         period, width, shift, count = self.configuration
         # get current values

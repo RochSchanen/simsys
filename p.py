@@ -33,5 +33,7 @@
 # print(EOL.join(L[1:-1]))
 
 # phase = (0 - shift) % period
-print((0-20) % 10)
+# print((0-20) % 10)
+
+# print(list(range(0)))
 
