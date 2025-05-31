@@ -19,15 +19,19 @@
 # print(l)
 
 
-### SYMBOLS
-EOL, SPC, NUL, TAB = "\n", " ", "", "\t"
+# ### SYMBOLS
+# EOL, SPC, NUL, TAB = "\n", " ", "", "\t"
 
-def S():
-	return """
-	this is a line
-	another line
-	"""
+# def S():
+# 	return """
+# 	this is a line
+# 	another line
+# 	"""
 
-L = [f"-{l.lstrip()}-" for l in S().split(EOL)]
+# L = [f"-{l.lstrip()}-" for l in S().split(EOL)]
 
-print(EOL.join(L[1:-1]))
+# print(EOL.join(L[1:-1]))
+
+# phase = (0 - shift) % period
+print((0-20) % 10)
+
