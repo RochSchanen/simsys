@@ -1,22 +1,28 @@
 # file: rom.txt
 # content: rom data
 # created: 2020 November 21 Saturday
-# modified:
-# modification:
-# author: roch schanen
-# comment:
+# author: Roch Schanen
 
 % HEXADECIMAL
 
-FF EE DD CC
-#BB AA 99 88
-#77 66 55 44
-#33 22 11
+FF FE 00 01
 
 # hash starts a comment line
-# an empty line is just skipped
+# a comment line skipped 
+# an empty line is skipped
 # data are separated by spaces
 # the representation can be BINARY, DECIMAL, HEXADECIMAL
-# the representation must be defined before the data table
+# the representation is defined BEFORE the data table
 # the default representation is HEXADECIMAL
-# the data width is fixed at 8 bits (one byte)
+# the data size is fixed at 8 bits (one standard byte)
+#
+# EXAMPLES:
+#
+# % HEXADECIMAL
+# FF FE 00 01
+#
+# % BINARY
+# 11111111 11111110 00000000 00000001
+#
+# % DECIMAL
+# 255 254 000 001

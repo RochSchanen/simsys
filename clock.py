@@ -97,6 +97,7 @@ if __name__ == "__main__":
     from core import logic_system
 
     ls = logic_system()
+    
     ls.add(clock(name = 'clk'))
     ls.add(clock(shift = 11, count = 3, name = 'clk'))
     ls.add(clock(shift = 9,  count = 3, name = 'clk'))
@@ -104,7 +105,9 @@ if __name__ == "__main__":
     ls.add(clock(55, 10, 30, 2, name = 'clk'))
     ls.add(clock(width = 9, shift = 10, count = 3, name = 'clk'))
     ls.add(clock(width = 9, shift = 10, name = 'clk'))
+    
     ls.display()
+    
     ls.open("./export.vcd")
     ls.run_until(200)
     ls.close()

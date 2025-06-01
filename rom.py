@@ -1,163 +1,205 @@
-#!/usr/bin/python3
 # file: rom.py
-# content: rom device
-# created: 20201 March 15 Monday
-# modified:
-# modification: 2021 March 20 Saturday
-# author: roch schanen
-# comment:
+# content: ROM
+# created: 2021 March 15 Monday
+# modified: 2025 June 01 Sunday
+# modification: update to match the core.py update
+# author: Roch Schanen
 
-# import core classes
-from core import Device, inPort, outPort
+''' 
+    the ROM device has one set of inputs ports, the address, and one set
+    of output ports, the data.
 
-# used to determine the minimum number
-# of bits to code for a given integer value 
+    the ROM data are defined by a character string of '0' and '1'.
+    the data bits are indexed in the same order than the characters:
+    bit 0 is the first character in the string.
+
+    the string is split into groups which size is given by the 'width'
+    parameter. This corresponds to the number of output bits.
+
+    for an inputs address of size n. the table must contain 2^n values.
+    That is a table of total binary length 2^n*width.
+
+    in the case the binary table length does not match the required
+    length, the rest of the table is automatically extended with 'U'
+    values. This allows for some flexibility during project development.
+
+    the address zero always points to the left most character of the
+    table string.
+
+    the least significant bit of the address is defined by the first input
+    port that is instantiated. The most significant bit of the address is
+    defined by the last input port that is instantiated.
+
+    the ROM output is updated as soon as the input address is updated.
+
+    simple two inputs gates or more complex look-up tables can be easily
+    created using the ROM device.
+
+    if the table string is replaced with a valid file path, the data
+    contained in the file will be used as the table. see the 'rom.txt'
+    file for example.
+'''
+
+from core import logic_device
+
 from numpy import log as ln
 from math import ceil
 
-''' ROM ##############################################################
+######################################################################
+###                                                            SYMBOLS
+######################################################################
+# move symbols to the tools.py module
 
-the rom device has one set of inputs ports, the address, and one set
-of output ports, the data.
+EOL, SPC, NUL, TAB = f"\n", f" ", f"", f"\t"
 
-the rom data are defined by a character string of '0' and '1'.
-the data bits are indexed in the same order than the characters:
-bit 0 is the first character in the string.
+######################################################################
+###                                                                ROM
+######################################################################
 
-the string is split into groups which size is given by the 'width'
-parameter. This corresponds to the number of output bits.
+class rom(logic_device):
 
-for an inputs address of size n. the table must contain 2^n values.
-That is a table of total binary length 2^n*width.
-
-in the case the binary table length does not match the required
-length, the rest of the table is automatically extended with 'U'
-values. This allows for some flexibility during project development.
-
-the address zero always points to the left most character of the
-table string.
-
-the least significant bit of the address is defined by the first input
-port that is instanciated. The most significant bit of the address is
-defined by the last input port that is instanciated.
-
-the rom output is updated as soon as the input address is updated.
-
-simple two inputs gates or more complex look-up tables can be easely
-created using the rom device.
-
-if the table string is replaced with a valid file path, the data
-contained in the file will be used as the table. see the 'rom.txt'
-file for example.
-
-'''
-
-class rom(Device):
-
-    genericName = 'rom'
-
-    # check if table is only composed of proper 'signal' characters
-    def tableCheck(self, table):
+    def table_check(self, table):
         n = 0
+        # all chars must be '0' or '1'
         for c in table:
             if c in '01':
-                    n += 1
+                n += 1
         return n == len(table)
 
-    def tableImport(self, filename):
-        # read file and collect data
-        rom, b, n = '', None, 0
-        fh = open(filename,'r')
-        l = fh.readline()
-        while l:
-            # strip current line
-            s = l.rstrip('\r\n')
-            # load next line
-            l = fh.readline()
+    def load(self, fp):
+        
+        # initialise
+        data, base, line_number = NUL, None, 0
+
+        # open file
+        fh = open(fp,'r')
+
+        # read file line by line
+        new_line = fh.readline()
+        
+        while new_line:
+            
+            # strip from end-of-line characters
+            line = new_line.rstrip('\r\n')
+            
+            # load next line already
+            new_line = fh.readline()
+            
             # update line number
-            n += 1
-            # skip empty line     
-            if not s: continue
+            line_number += 1
+            
+            # skip empty lines     
+            if line is NUL: continue
+            
             # strip heading spaces
-            s = s.lstrip(' ')
-            # skip commented line
-            if s[0] == '#': continue
-            # select numeric representation (before data)
-            print(s)
-            if s[0] == '%':
-                if s[1:].strip() == 'BINARY': b = 2; continue
-                if s[1:].strip() == 'DECIMAL': b = 10; continue
-                if s[1:].strip() == 'HEXADECIMAL': b = 16; continue
-                print(f'unknown command "{s[1:].strip()}", current line is {n}')
+            line = line.lstrip(SPC)
+
+            # skip comment lines
+            if line[0] == '#': continue
+
+            # detect numeric representation
+            if line[0] == '%':
+                if line[1:].strip() == 'BINARY'      : base =  2; continue
+                if line[1:].strip() == 'DECIMAL'     : base = 10; continue
+                if line[1:].strip() == 'HEXADECIMAL' : base = 16; continue
+                print(f'unknown representation "{line[1:].strip()}", at line {line_number}.')
                 exit()
+
             # set default to hexadecimal
-            if not b: b = 16
-            # append data to the table
-            for w in s.split():
-                rom += f'{int(w, b):08b}'[::-1]
-        return rom
+            if base is None: base = 16
+            
+            # append data to the table in binary format
+            for word in line.split():
+                data += f'{int(word, base):08b}'[::-1]
+
+        # done
+        return data
 
     def __init__(
             self,
-            table = '1110', # NAND table (a two bit address is expected)
-            width = 1,      # data bus width, one bit output
-            name  = None):  # device name: None, use generic
+            table = '1110',
+            width = 1,
+            name  = None):
+        # the default used is the NAND table with two bit inputs
+        # another more relevant default table could be used instead.
+
         # check if table is a path to the table data
-        if not self.tableCheck(table):
+        if not self.table_check(table):
             # if table is a path, import table
-            table = self.tableImport(table)
+            table = self.load(table)
+
         # call parent class constructor
-        Device.__init__(self, name)
+        logic_device.__init__(self, name)
+
         # find number of words
         words = ceil(len(table)/width)
-        # size in power of 2
+
+        # express the size in powers of 2
         size = ceil(ln(words)/ln(2))
-        # complete table up to 2^size
+
+        # expand the table up to 2^size
         table += 'U'*(2**size-words)*width
+        # the unknown 'U' state is used, however
+        # this could be replaced with random bits
+        # instead.
+
         # record configuration
         self.configuration = size, width, table
+
         # instantiate output port
-        self.Q = outPort(width, "Q")
-        # register port
-        self.outports.append(self.Q)
+        self.Q = self.add_output_port(width, "Q")
+
         # set default output port value
         self.Q.set(table[0:width])
+
         # done
         return
 
-    def ilk_a(self, port, subset = None):
-        # instantiate input port
-        newport = inPort(port, f"A{len(self.inports)}", subset)
-        # register port
-        self.inports.append(newport)
+    def add_address(self, port, subset = None):
+        newport = self.add_input_port(port, f"A", subset)
+        # done
         return
 
     def display(self):
+        
         # get name
         name = self.name
+        
         # get configuration
         size, width, table = self.configuration
+        
         # get current value
         value = f"Q={self.Q.get()[::-1]}"
+        
         # display
         print(f"<read only memory> {name}")
         print(f"  size {2**size}x{width}")
         print(f"  value {value}")
         s =   f"  table "
-        # get alignment
-        n = len(s)
+        
+        # alignment
+        align = len(s)
+        
         # scan through table
         for i in range(2**size):
+        
             # build up display string
-            s += f"{table[i*width:(i+1)*width][::-1]} "
-            # end of line above 40 characters
-            if len(s) > 40: print(f"{s}"); s = n*" "
-        # print remain of the table
-        if len(s) > n: print(f"{s}")
-        # build address string
+            s += f"{table[i*width:(i+1)*width][::-1]}{SPC}"
+        
+            # limit lines up to 40 characters
+            if len(s) > 40:
+                print(f"{s}")
+                s = SPC*align
+        
+        # print remaining data
+        if len(s) > align:
+            print(f"{s}")
+        
+        # build address string from input ports
         s = ""
-        for p in self.inports:
+        for p in self.inputs:
             s += p.get()
+        
         # detect size mismatch error
         if not size == len(s):
             print(f"  Size mismatch.")
@@ -167,57 +209,59 @@ class rom(Device):
             exit()
         return
 
-    def updateOutputPorts(self, timeStamp):
+    def update(self, timeStamp):
+
         # get configuration
         size, width, table = self.configuration
-        # build address string
+
+        # build address string from input ports
         s = ""
-        for p in self.inports:
+        for p in self.inputs:
             s += p.get()
+
         # convert string to integer
         a = int(s[::-1], 2)
+
         # update output value
         self.Q.set(table[a*width:(a+1)*width])
+
         # done
         return
 
-# EXAMPLE ############################################################
+######################################################################
+#                                                              EXAMPLE
+######################################################################
 
 if __name__ == "__main__":
 
-    from sys import version as pythonVersion
-
-    print("file: clock.py")
-    print("content: rom device")
-    print("created: 2021 March 15 Monday")
-    print("author: Roch Schanen")
-    print("comment:")
-    print("run python3:" + pythonVersion)
-
-    from core import system
-    from clock import clock
+    from core import logic_system
     from counter import counter
+    from clock import clock
 
     # build system
-    S = system("version 0.00")
+    ls = logic_system()
     
-    # create devices
-    clk0 = S.add(clock())
-    clk1 = S.add(clock(10, 5, 5, 1))
-    cnt0 = S.add(counter(2))
-    rom0 = S.add(rom('00110011', 2))
-    rom1 = S.add(rom('./rom.txt', 8))
+    # create clocks
+    clk = ls.add(clock(name = "clock"))
+    rst = ls.add(clock(10, 5, 5, 1, name = "reset"))
 
-    # create links
-    cnt0.ilk_clk(clk0.Q)
-    cnt0.ilk_clr(clk1.Q)
-    rom0.ilk_a(cnt0.Q)
-    rom1.ilk_a(cnt0.Q)    
+    # create two bits counter (0-3)
+    cnt = ls.add(counter(2, name = "counter"))
+    cnt.add_clk(clk.Q)
+    cnt.add_clr(rst.Q)
+
+    # add gate ROM
+    gate = ls.add(rom(name = 'gate'))
+    gate.add_address(cnt.Q)
+
+    # add ROM from file
+    mem = ls.add(rom('./rom.txt', 8, 'memory'))
+    mem.add_address(cnt.Q)    
 
     # check setup
-    S.displayDevices()
+    ls.display()
 
     # simulate
-    S.openFile()
-    S.runUntil(200)
-    S.closeFile()
+    ls.open("./export.vcd")
+    ls.run_until(100)
+    ls.close()

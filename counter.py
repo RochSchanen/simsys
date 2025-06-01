@@ -116,7 +116,9 @@ class counter(logic_device):
         # done
         return
 
-# EXAMPLE ############################################################
+######################################################################
+#                                                              EXAMPLE
+######################################################################
 
 if __name__ == "__main__":
 
@@ -125,17 +127,21 @@ if __name__ == "__main__":
 
     # build system
     ls = logic_system()
+
     # create devices
     clk  = ls.add(clock(name = 'clk'))
     rst  = ls.add(clock(40, 35, 5, 1, name = 'rst'))
     cnt0 = ls.add(counter(name = 'cnt0'))
     cnt1 = ls.add(counter(name = 'cnt1'))
+
     # create i/o links
     cnt0.add_clk(clk.Q)
     cnt1.add_clk(clk.Q)
     cnt1.add_clr(rst.Q)
+
     # check setup
     ls.display()
+
     # simulate
     ls.open("./export.vcd")
     ls.run_until(200)
