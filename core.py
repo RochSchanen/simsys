@@ -25,6 +25,7 @@ class logic_port():
             port   = None,
             subset = None,
             ):
+        
         # make signal name
         self.signal = f"W{self.signal_counter}"
         # increment signal counter
@@ -151,19 +152,19 @@ class logic_device():
             name_counter += 1
         return name_string
 
-    def add_input_port(self, port, name = None):
+    def add_input_port(self, port, name = None, subset = None):
         name = self.name_duplicate(self.inputs, name)
         new_port = logic_port(name, port = port)
         self.inputs.append(new_port)
         return new_port
 
-    def add_output_port(self, width, name = None, port = None):
+    def add_output_port(self, width, name = None, port = None, subset = None):
         name = self.name_duplicate(self.outputs, name)
         new_port = logic_port(name, width = width, port = port)
         self.outputs.append(new_port)
         return new_port
 
-    def add_device(self, device):
+    def add(self, device):
         device.name = self.name_duplicate(self.devices, device.name)
         self.devices.append(device)
         return device
@@ -298,7 +299,7 @@ if __name__ == "__main__":
     ls = logic_system()
 
     # add a clock to the logic system
-    ls.add_device(clock(name = "clk"))
+    ls.add(clock(name = "clk"))
 
     # display system contents
     ls.display()
