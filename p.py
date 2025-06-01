@@ -37,25 +37,25 @@
 
 # print(list(range(0)))
 
-class c():
+# class c():
 
-	a = None
+# 	a = None
 
-	def __init__(self):
-		self.a = "foo"
+# 	def __init__(self):
+# 		self.a = "foo"
 
-	def b(self):
-		c.a = 'bar'
+# 	def b(self):
+# 		c.a = 'bar'
 
-c0 = c()
-print(c0.a)
+# c0 = c()
+# print(c0.a)
 
-c0.a = 'hello'
-print(c0.a)
+# c0.a = 'hello'
+# print(c0.a)
 
-c1 = c()
-c1.b()
-print(c1.a)
+# c1 = c()
+# c1.b()
+# print(c1.a)
 
-c2 = c()
-print(c2.a)
+# c2 = c()
+# print(c2.a)
