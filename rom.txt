@@ -3,7 +3,13 @@
 # created: 2020 November 21 Saturday
 # author: Roch Schanen
 
-1 2 3 4
+% HEXADECIMAL
+
+01 02
+
+% BINARY
+
+11 100
 
 # hash starts a comment line
 # a comment line is skipped 

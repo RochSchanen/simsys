@@ -3,6 +3,8 @@
 # created: 2025 June 02 Monday
 # author: Roch Schanen
 
+from numpy.random import randint
+
 ######################################################################
 ###                                                            SYMBOLS
 ######################################################################
@@ -13,7 +15,7 @@ EOL, SPC, NUL, TAB = f"\n", f" ", f"", f"\t"
 ###                                                     NAME_DUPLICATE
 ######################################################################
 
-def name_duplicate(self, object_list, name):
+def name_duplicate(object_list, name):
     # bypass no name
     if name is None: return NUL
     # build name list

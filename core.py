@@ -3,12 +3,7 @@
 # created: 2025 May 28 Wednesday
 # author: Roch Schanen
 
-######################################################################
-###                                                            SYMBOLS
-######################################################################
-# move symbols to the tools.py module
-
-EOL, SPC, NUL, TAB = f"\n", f" ", f"", f"\t"
+from toolbox import *
 
 ######################################################################
 ###                                                               PORT
@@ -142,31 +137,20 @@ class logic_device():
         # done
         return
 
-    def name_duplicate(self, object_list, name):
-        # bypass no name
-        if name is None: return NUL
-        # build name list
-        name_list = [obj.name for obj in object_list]
-        name_counter, name_string = 0, f"{name}"
-        while name_string in name_list:
-            name_string = f"{name}{name_counter}"
-            name_counter += 1
-        return name_string
-
     def add_input_port(self, port, name = None, subset = None):
-        name = self.name_duplicate(self.inputs, name)
+        name = name_duplicate(self.inputs, name)
         new_port = logic_port(name, port = port)
         self.inputs.append(new_port)
         return new_port
 
     def add_output_port(self, width, name = None, port = None, subset = None):
-        name = self.name_duplicate(self.outputs, name)
+        name = name_duplicate(self.outputs, name)
         new_port = logic_port(name, width = width, port = port)
         self.outputs.append(new_port)
         return new_port
 
     def add(self, device):
-        device.name = self.name_duplicate(self.devices, device.name)
+        device.name = name_duplicate(self.devices, device.name)
         self.devices.append(device)
         return device
 

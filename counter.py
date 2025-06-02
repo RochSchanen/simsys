@@ -26,22 +26,8 @@
     int(STRING[::-1], 2) and for a string conversion, use f'{NUMBER:0{size}b}'.
 '''
 
+from toolbox import *
 from core import logic_device
-
-from numpy.random import randint
-
-######################################################################
-###                                                              TOOLS
-######################################################################
-# tools need to be moved to a tool.py module for re-use.
-
-# random bits generator
-def random_bits(width = 1):
-    n, s = 0, ""
-    while n < width:
-        s += f'{randint(256):0{8}b}'
-        n += 8
-    return s[0:width]
 
 ######################################################################
 ###                                                              CLOCK
