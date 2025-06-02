@@ -3,13 +3,11 @@
 # created: 2020 November 21 Saturday
 # author: Roch Schanen
 
-% HEXADECIMAL
+% HEX
 
-01 02
+0 1 2 3
 
-% BINARY
-
-11 100
+% BIN
 
 # hash starts a comment line
 # a comment line is skipped 
@@ -22,11 +20,11 @@
 
 # EXAMPLES:
 
-# % HEXADECIMAL
+# % HEX
 # FF FE 00 01
 
-# % BINARY
+# % BIN
 # 11111111 11111110 00000000 00000001
 
-# % DECIMAL
+# % DEC
 # 255 254 000 001

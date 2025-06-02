@@ -66,67 +66,58 @@ class rom(logic_device):
                 n += 1
         return n == len(table)
 
-    def load(self, fp):
-        
+    def load(self, fp, width):
         # initialise
         data, base, line_number = NUL, None, 0
-
         # open file
         fh = open(fp,'r')
-
         # read file line by line
         new_line = fh.readline()
-        
         while new_line:
-            
-            # strip from end-of-line characters
+            # strip 'end-of-line' characters
             line = new_line.rstrip('\r\n')
-            
             # load next line already
             new_line = fh.readline()
-            
             # update line number
             line_number += 1
-            
             # skip empty lines     
             if line is NUL: continue
-            
             # strip heading spaces
             line = line.lstrip(SPC)
-
             # skip comment lines
             if line[0] == '#': continue
 
-            # detect numeric representation
+            # parse representation
             if line[0] == '%':
-                if line[1:].strip() == 'BINARY'      : base =  2; continue
-                if line[1:].strip() == 'DECIMAL'     : base = 10; continue
-                if line[1:].strip() == 'HEXADECIMAL' : base = 16; continue
+                if line[1:].strip() == 'BIN' : base = 2; continue
+                if line[1:].strip() == 'DEC' : base = 10; continue
+                if line[1:].strip() == 'HEX' : base = 16; continue
                 print(f'unknown representation "{line[1:].strip()}", at line {line_number}.')
                 exit()
-
-            # set default to hexadecimal
+            # default representation is hexadecimal
             if base is None: base = 16
             
             # append data to the table in binary format
+            # words are separated by spaces
             for word in line.split():
-                data += f'{int(word, base):08b}'[::-1]
-
+                # only the 'width' least significant bit are kept
+                # the bits exceeding the word 'width' are ignored
+                data += f'{int(word, base):0{width}b}'[::-1][:width]
         # done
         return data
 
-    def __init__(
-            self,
-            table = '1110',
-            width = 1,
-            name  = None):
+    def __init__(self,
+            table = '1110', # the table is always stored as a binary string
+            width = 1,      # the table is subdivided in words of size 'width'
+            name  = None,
+            ):
         # the default used is the NAND table with two bit inputs
         # another more relevant default table could be used instead.
 
-        # check if table is a path to the table data
+        # check if the table string is a path instead of a table
         if not self.table_check(table):
             # if table is a path, import table
-            table = self.load(table)
+            table = self.load(table, width)
 
         # call parent class constructor
         logic_device.__init__(self, name)
@@ -187,7 +178,7 @@ class rom(logic_device):
             s += f"{table[i*width:(i+1)*width][::-1]}{SPC}"
         
             # limit lines up to 40 characters
-            if len(s) > 40:
+            if len(s) > 80:
                 print(f"{s}")
                 s = SPC*align
         
@@ -255,11 +246,13 @@ if __name__ == "__main__":
     gate.add_address(cnt.Q)
 
     # add ROM from file
-    mem = ls.add(rom('./rom.txt', 8, 'memory'))
+    mem = ls.add(rom('./rom.txt', 2, 'memory'))
     mem.add_address(cnt.Q)    
 
     # check setup
     ls.display()
+
+    print(mem.configuration)
 
     # simulate
     ls.open("./export.vcd")

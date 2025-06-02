@@ -1,4 +1,6 @@
 
+.local
+
 *.pyc
 *.vcd
 *.sublime-project
