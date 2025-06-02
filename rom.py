@@ -243,7 +243,7 @@ if __name__ == "__main__":
     
     # create clocks
     clk = ls.add(clock(name = "clock"))
-    rst = ls.add(clock(10, 5, 5, 1, name = "reset"))
+    rst = ls.add(clock(20, 15, 5, 1, name = "reset"))
 
     # create two bits counter (0-3)
     cnt = ls.add(counter(2, name = "counter"))
@@ -265,3 +265,4 @@ if __name__ == "__main__":
     ls.open("./export.vcd")
     ls.run_until(100)
     ls.close()
+ 
