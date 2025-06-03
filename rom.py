@@ -40,6 +40,7 @@
     file for example.
 '''
 
+from toolbox import *
 from core import logic_device
 
 from numpy import log as ln
@@ -55,94 +56,38 @@ EOL, SPC, NUL, TAB = f"\n", f" ", f"", f"\t"
 ######################################################################
 ###                                                                ROM
 ######################################################################
+# the default used is the NAND table with two bit inputs
+# another more relevant default table could be used instead.
 
 class rom(logic_device):
 
-    def table_check(self, table):
-        n = 0
-        # all chars must be '0' or '1'
-        for c in table:
-            if c in '01':
-                n += 1
-        return n == len(table)
-
-    def load(self, fp, width):
-        # initialise
-        data, base, line_number = NUL, None, 0
-        # open file
-        fh = open(fp,'r')
-        # read file line by line
-        new_line = fh.readline()
-        while new_line:
-            # strip 'end-of-line' characters
-            line = new_line.rstrip('\r\n')
-            # load next line already
-            new_line = fh.readline()
-            # update line number
-            line_number += 1
-            # skip empty lines     
-            if line is NUL: continue
-            # strip heading spaces
-            line = line.lstrip(SPC)
-            # skip comment lines
-            if line[0] == '#': continue
-
-            # parse representation
-            if line[0] == '%':
-                if line[1:].strip() == 'BIN' : base = 2; continue
-                if line[1:].strip() == 'DEC' : base = 10; continue
-                if line[1:].strip() == 'HEX' : base = 16; continue
-                print(f'unknown representation "{line[1:].strip()}", at line {line_number}.')
-                exit()
-            # default representation is hexadecimal
-            if base is None: base = 16
-            
-            # append data to the table in binary format
-            # words are separated by spaces
-            for word in line.split():
-                # only the 'width' least significant bit are kept
-                # the bits exceeding the word 'width' are ignored
-                data += f'{int(word, base):0{width}b}'[::-1][:width]
-        # done
-        return data
-
     def __init__(self,
-            table = '1110', # the table is always stored as a binary string
-            width = 1,      # the table is subdivided in words of size 'width'
-            name  = None,
+            table  = '1110', # the table is always stored as a binary string
+            width  =      1, # the table is subdivided in words of size 'width'
+            expand =    '0', # use '0', '1', 'U' for un-intialised, 'R' for random
+            name   =   None,
             ):
-        # the default used is the NAND table with two bit inputs
-        # another more relevant default table could be used instead.
-
-        # check if the table string is a path instead of a table
-        if not self.table_check(table):
-            # if table is a path, import table
-            table = self.load(table, width)
-
         # call parent class constructor
         logic_device.__init__(self, name)
-
         # find number of words
         words = ceil(len(table)/width)
-
         # express the size in powers of 2
         size = ceil(ln(words)/ln(2))
-
-        # expand the table up to 2^size
-        table += 'U'*(2**size-words)*width
-        # the unknown 'U' state is used, however
-        # this could be replaced with random bits
-        # instead.
-
+        # compute expansion size
+        n = (2**size-words)*width
+        # expand the table up to 2^size                
+        table += {
+            '0': '0'*n,
+            '1': '1'*n,
+            'U': 'U'*n,
+            'R': random_bits(n),
+            }[expand]
         # record configuration
         self.configuration = size, width, table
-
         # instantiate output port
         self.Q = self.add_output_port(width, "Q")
-
         # set default output port value
         self.Q.set(table[0:width])
-
         # done
         return
 
@@ -237,22 +182,24 @@ if __name__ == "__main__":
     rst = ls.add(clock(20, 15, 5, 1, name = "reset"))
 
     # create two bits counter (0-3)
-    cnt = ls.add(counter(2, name = "counter"))
+    cnt = ls.add(counter(3, name = "counter"))
     cnt.add_clk(clk.Q)
     cnt.add_clr(rst.Q)
 
     # add gate ROM
-    gate = ls.add(rom(name = 'gate'))
+    gate = ls.add(rom(
+            table = "000001010011100",
+            width = 3,
+            name = 'gate',
+            ))
     gate.add_address(cnt.Q)
 
     # add ROM from file
-    mem = ls.add(rom('./rom.txt', 8, 'memory'))
-    mem.add_address(cnt.Q)    
+    # mem = ls.add(rom('./rom.txt', 8, 'memory'))
+    # mem.add_address(cnt.Q)    
 
     # check setup
     ls.display()
-
-    print(mem.configuration)
 
     # simulate
     ls.open("./export.vcd")

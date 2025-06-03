@@ -1,24 +1,18 @@
-# file: rom.txt
+# file: r.rom
 # content: rom data
-# created: 2020 November 21 Saturday
+# created: 2025 June 3 Tuesday
 # author: Roch Schanen
 
-% BIN
+BITS = 4
+BASE = HEX
 
-10 11
-
-% HEX
-
-01 02
-
-# hash starts a comment line
-# a comment line is skipped 
-# an empty line is skipped
+# hash '#' starts a comment line
+# comment lines are skipped 
+# empty lines are skipped
 # data are separated by spaces
-# the representation can be 'BINARY', 'DECIMAL', or 'HEXADECIMAL'
-# the representation must be defined before the data
-# the default representation is 'HEXADECIMAL'
-# the data must be given in chunks of 8 bits (whatever the data width)
+# the base can be 'BIN', 'DEC', or 'HEX'
+# the default is 'HEX'
+# each word read is coerced to 'BITS' length
 
 # EXAMPLES:
 
