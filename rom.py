@@ -246,7 +246,7 @@ if __name__ == "__main__":
     gate.add_address(cnt.Q)
 
     # add ROM from file
-    mem = ls.add(rom('./rom.txt', 2, 'memory'))
+    mem = ls.add(rom('./rom.txt', 8, 'memory'))
     mem.add_address(cnt.Q)    
 
     # check setup
@@ -256,6 +256,6 @@ if __name__ == "__main__":
 
     # simulate
     ls.open("./export.vcd")
-    ls.run_until(100)
+    ls.run_until(150)
     ls.close()
  

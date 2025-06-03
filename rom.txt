@@ -3,11 +3,13 @@
 # created: 2020 November 21 Saturday
 # author: Roch Schanen
 
+% BIN
+
+10 11
+
 % HEX
 
-0 1 2 3
-
-% BIN
+01 02
 
 # hash starts a comment line
 # a comment line is skipped 
