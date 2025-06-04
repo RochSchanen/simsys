@@ -32,3 +32,4 @@
         '-' for don't care
         'W' for weak
         'X' for collision
+    + add startup behaviour at the port level?
