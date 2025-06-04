@@ -104,38 +104,9 @@ class logic_device():
         # done
         return
 
-    def export(self):
-        # unnamed
-        if self.name is None: return NUL
-        # build export string
-        export_string = NUL
-        # go through all device contents
-        for i in self.inputs:  export_string += i.export()
-        for d in self.devices: export_string += d.export()
-        for o in self.outputs: export_string += o.export()
-        # done
-        return export_string
-
-    def update_input_ports(self):
-        # update inputs ports first
-        for i in self.inputs: i.update()
-        # update sub-devices
-        for d in self.devices: d.update_input_ports()
-        # done
-        return
-
-    def update_output_ports(self, timeStamp):
-        # update sub-devices first
-        for d in self.devices:
-            self.devices.update_outputs(timeStamp)
-        # update 'linked' output ports
-        for o in self.outputs:
-            if o.port is None: continue
-            o.update()
-        # update 'unlinked' output ports
-        self.update(timeStamp)
-        # done
-        return
+    # device specific
+    def start(self):
+        pass        
 
     def add_input_port(self, port, name = None, subset = None):
         name = name_duplicate(self.inputs, name)
@@ -154,22 +125,45 @@ class logic_device():
         self.devices.append(device)
         return device
 
-    ### device specific ###
+    def update_output_ports(self, timeStamp):
+        # update sub-devices first
+        for d in self.devices:
+            self.devices.update_outputs(timeStamp)
+        # update 'linked' output ports
+        for o in self.outputs:
+            if o.port is None: continue
+            o.update()
+        # update 'unlinked' output ports
+        self.update(timeStamp)
+        # done
+        return
 
-    # build up device internal structure
-    # during sub class instantiation.
-    def start(self):
-        pass        
-
-    # display device structure and state
-    # whenever.
-    def display(self):
+    # device specific
+    def update(self, timeStamp):
         pass
 
-    # device output ports updates:
-    # from this inputs, sub-devices outputs, timestamp,
-    # or any other internal parameters.
-    def update(self, timeStamp):
+    def update_input_ports(self):
+        # update inputs ports first
+        for i in self.inputs: i.update()
+        # update sub-devices
+        for d in self.devices: d.update_input_ports()
+        # done
+        return
+
+    def export(self):
+        # unnamed
+        if self.name is None: return NUL
+        # build export string
+        export_string = NUL
+        # go through all device contents
+        for i in self.inputs:  export_string += i.export()
+        for d in self.devices: export_string += d.export()
+        for o in self.outputs: export_string += o.export()
+        # done
+        return export_string
+
+    # device specific
+    def display(self):
         pass
 
 ######################################################################
@@ -186,19 +180,18 @@ class logic_system(logic_device):
         # done
         return
 
-    def add_signal(self, device, port, t = 0):
-        # setup alignment
-        align = TAB*t
-        # skip unnamed port
-        if port.name is None: return NUL
-        # make label
-        label = f"{device.name}_{port.name}"
-        # get signal identifier and size
-        signal, width = port.signal, port.size()
-        # multiple bits
-        if width > 1: label += f"[{width-1}:0]"
-        # declare signal
-        self.fh.write(f"{align}$var wire {width} {signal} {label} $end{EOL}")
+    def open(self, fp):
+        fh = open(fp, 'w')       
+        # register file handle
+        self.fh = fh
+        # write header
+        self.fh.write(f"$version 'SimSys 0.0' $end{EOL}")
+        self.fh.write(f"$date {self.date} $end{EOL}")
+        self.fh.write(f"$timescale 1ns $end{EOL}")
+        self.fh.write(f"$scope module SYSTEM $end{EOL}")
+        for d in self.devices: self.add_module(d, 1)
+        self.fh.write(f"$upscope $end{EOL}")
+        self.fh.write(f"$enddefinitions $end{EOL}")
         # done
         return
 
@@ -219,24 +212,32 @@ class logic_system(logic_device):
         # done
         return
 
-    def open(self, fp):
-        fh = open(fp, 'w')       
-        # register file handle
-        self.fh = fh
-        # write header
-        self.fh.write(f"$version 'SimSys 0.0' $end{EOL}")
-        self.fh.write(f"$date {self.date} $end{EOL}")
-        self.fh.write(f"$timescale 1ns $end{EOL}")
-        self.fh.write(f"$scope module SYSTEM $end{EOL}")
-        for d in self.devices: self.add_module(d, 1)
-        self.fh.write(f"$upscope $end{EOL}")
-        self.fh.write(f"$enddefinitions $end{EOL}")
+    def add_signal(self, device, port, t = 0):
+        # setup alignment
+        align = TAB*t
+        # skip unnamed port
+        if port.name is None: return NUL
+        # make label
+        label = f"{device.name}_{port.name}"
+        # get signal identifier and size
+        signal, width = port.signal, port.size()
+        # check for multiple bits
+        if width > 1: label += f"[{width-1}:0]"
+        # add signal
+        self.fh.write(f"{align}$var wire {width} {signal} {label} $end{EOL}")
         # done
         return
 
-    def close(self):
+    def run_until(self, time):
+        while self.time < time: self.run_step()
+        # done
+        return
+
+    def run_step(self):
         self.export()
-        self.fh.close()
+        self.time += 1
+        for d in self.devices: d.update_output_ports(self.time)
+        for d in self.devices: d.update_input_ports()        
         # done
         return
 
@@ -254,16 +255,9 @@ class logic_system(logic_device):
         # done
         return
 
-    def run_step(self):
+    def close(self):
         self.export()
-        self.time += 1
-        for d in self.devices: d.update_output_ports(self.time)
-        for d in self.devices: d.update_input_ports()        
-        # done
-        return
-
-    def run_until(self, time):
-        while self.time < time: self.run_step()
+        self.fh.close()
         # done
         return
 
@@ -273,29 +267,16 @@ class logic_system(logic_device):
         return
 
 ######################################################################
-#                                                              EXAMPLE
+#                                                                 TEST
 ######################################################################
 
 if __name__ == "__main__":
 
     from clock import clock
 
-    # instantiate logic system
     ls = logic_system()
-
-    # add a clock to the logic system
     ls.add(clock(name = "clk"))
-
-    # display system contents
     ls.display()
-
-    # create output file
     ls.open(f"./export.vcd")
-
-    # run simulation over 100 ns
     ls.run_until(100)
-
-    # close file
     ls.close()
-
-    # done

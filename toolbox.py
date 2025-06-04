@@ -3,39 +3,52 @@
 # created: 2025 June 02 Monday
 # author: Roch Schanen
 
+from toolbox import *
 from numpy.random import randint
-
-######################################################################
-###                                                            SYMBOLS
-######################################################################
-
-EOL, SPC, NUL, TAB = f"\n", f" ", f"", f"\t"
 
 ######################################################################
 ###                                                     NAME_DUPLICATE
 ######################################################################
 
-def name_duplicate(object_list, name):
-    # bypass no name
-    if name is None: return NUL
-    # build name list
-    name_list = [obj.name for obj in object_list]
-    name_counter, name_string = 0, f"{name}"
-    while name_string in name_list:
-        name_string = f"{name}{name_counter}"
-        name_counter += 1
-    return name_string
+def name_duplicate(objects, name):
+    # bypass when no name
+    if name is None: return None
+    # build the list of names
+    names = [o.name for o in objects]
+    # initialise (start counting from one)
+    counter, newname = 1, f"{name}"
+    # loop until no duplicate
+    while newname in names:
+        newname = f"{name}{counter}"
+        counter += 1
+    # done
+    return newname
 
 ######################################################################
 ###                                                        RANDOM_BITS
 ######################################################################
 
-def random_bits(width = 1):
-    n, s = 0, ""
-    while n < width:
-        s += f'{randint(256):0{8}b}'
-        n += 8
-    return s[0:width]
+def random_bits(bits = 1, blocklength = 8):
+    # initialise
+    n, table = 0, NUL
+    # build enough random bits
+    while n < bits:
+        table += f'{randint(1<<blocklength):0{blocklength}b}'
+        n += blocklength
+    # cut-off excess and return
+    return table[0:bits]
+
+######################################################################
+###                                                       STARTUP_BITS
+######################################################################
+
+def startup_bits(bits = 1, behaviour = 'U'):
+    return {
+        'U': 'U'*bits,
+        'R': random_bits(bits),
+        '0': '0'*bits,
+        '1': '1'*bits,
+        }[behaviour]
 
 ######################################################################
 ###                                                         LOAD_TABLE
@@ -43,7 +56,7 @@ def random_bits(width = 1):
 
 def load_table(fp):
     # initialise
-    data, base, line_number = NUL, None, 0
+    table, base, bits, line_number = NUL, 16, 8, 0
     # open file
     fh = open(f'{fp}.rom','r')
     # read file line by line
@@ -72,11 +85,11 @@ def load_table(fp):
         # default representation is hexadecimal
         if base is None: base = 16
         
-        # append data to the table in binary format
+        # append table to the table in binary format
         # words are separated by spaces
         for word in line.split():
-            # only the 'width' least significant bit are kept
-            # the bits exceeding the word 'width' are ignored
-            data += f'{int(word, base):0{width}b}'[::-1][:width]
+            # only the 'bits' least significant bit are kept
+            # the bits exceeding the word 'bits' are ignored
+            table += f'{int(word, base):0{bits}b}'[::-1][:bits]
     # done
-    return width, data
+    return bits, table

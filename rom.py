@@ -42,16 +42,8 @@
 
 from toolbox import *
 from core import logic_device
-
 from numpy import log as ln
 from math import ceil
-
-######################################################################
-###                                                            SYMBOLS
-######################################################################
-# move symbols to the tools.py module
-
-EOL, SPC, NUL, TAB = f"\n", f" ", f"", f"\t"
 
 ######################################################################
 ###                                                                ROM
@@ -76,12 +68,7 @@ class rom(logic_device):
         # compute expansion size
         n = (2**size-words)*width
         # expand the table up to 2^size                
-        table += {
-            '0': '0'*n,
-            '1': '1'*n,
-            'U': 'U'*n,
-            'R': random_bits(n),
-            }[expand]
+        table += 
         # record configuration
         self.configuration = size, width, table
         # instantiate output port

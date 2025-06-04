@@ -60,26 +60,6 @@ class counter(logic_device):
         # done
         return
 
-    def display(self):
-        # get name
-        name = self.name
-        # get configuration
-        size = self.configuration
-        # get current values
-        value = f'Q={self.Q.get()[::-1]}'
-        # display
-        print(f"<counter> {name}")
-        if self.clk:
-            print(f"  trigger {self.clk.get()}", end="")
-            if self.clk.rising:
-                print(", rising", end="")
-            print()
-        if self.clr:
-            print(f"  clear {self.clr.get()}")
-        print(f"  size {size}")
-        print(f"  value {value}")
-        return
-
     def update(self, timeStamp):
         # get configuration
         size = self.configuration
@@ -102,8 +82,28 @@ class counter(logic_device):
         # done
         return
 
+    def display(self):
+        # get name
+        name = self.name
+        # get configuration
+        size = self.configuration
+        # get current values
+        value = f'Q={self.Q.get()[::-1]}'
+        # display
+        print(f"<counter> {name}")
+        if self.clk:
+            print(f"  trigger {self.clk.get()}", end="")
+            if self.clk.rising:
+                print(", rising", end="")
+            print()
+        if self.clr:
+            print(f"  clear {self.clr.get()}")
+        print(f"  size {size}")
+        print(f"  value {value}")
+        return
+
 ######################################################################
-#                                                              EXAMPLE
+#                                                                 TEST
 ######################################################################
 
 if __name__ == "__main__":
@@ -111,24 +111,13 @@ if __name__ == "__main__":
     from core import logic_system
     from clock import clock
 
-    # build system
     ls = logic_system()
-
-    # create devices
-    clk  = ls.add(clock(name = 'clk'))
-    rst  = ls.add(clock(40, 35, 5, 1, name = 'rst'))
-    cnt0 = ls.add(counter(name = 'cnt0'))
-    cnt1 = ls.add(counter(name = 'cnt1'))
-
-    # create i/o links
-    cnt0.add_clk(clk.Q)
-    cnt1.add_clk(clk.Q)
-    cnt1.add_clr(rst.Q)
-
-    # check setup
+    clk  = ls.add(clock(name = 'clock'))
+    rst  = ls.add(clock(40, 35, 5, 1, name = 'reset'))
+    cnt = ls.add(counter(name = 'counter'))
+    cnt.add_clk(clk.Q)
+    cnt.add_clr(rst.Q)
     ls.display()
-
-    # simulate
     ls.open("./export.vcd")
     ls.run_until(200)
     ls.close()
