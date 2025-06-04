@@ -33,15 +33,15 @@ def name_duplicate(objects, name):
 ###                                                        RANDOM_BITS
 ######################################################################
 
-def random_bits(bits = 1, blocklength = 8):
+def random_bits(bits = 1, block = 8):
     # initialise
     n, table = 0, NUL
     # build enough random bits
     while n < bits:
-        table += f'{randint(1<<blocklength):0{blocklength}b}'
-        n += blocklength
+        table += f'{randint(1<<block):0{block}b}'
+        n += block
     # cut-off excess and return
-    return table[0:bits]
+    return table[:bits]
 
 ######################################################################
 ###                                                       STARTUP_BITS

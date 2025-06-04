@@ -1,8 +1,15 @@
 # classes.md
 
-**core.py**
+**toolbox.py**
 
-- EOL, SPC, NUL, TAB  
+- **EOL, SPC, NUL, TAB**  
+
+- **name_duplicate**(objects, name)  
+- **random_bits**(bits, block)  
+- **startup_bits**(bits, behav)  
+- **load_table**(fp)  
+
+**core.py**
 
 - logic_port()  
     > **\_\_init\_\_**(name, width, port, subset)  
@@ -14,54 +21,48 @@
 
 - logic_device()  
     > **\_\_init\_\_**(name)  
-    > **export**()  
-    > **update_input_ports**()  
-    > **update_output_ports**(timeStamp)  
-    > **name_duplicate**(object_list, name)  
+    > **start**()    
     > **add_input_port**(port, name, subset)  
     > **add_output_port**(width, name, port, subset)  
     > **add**(device)  
-    device specific:  
-    > **start**()    
-    > **display**()    
+    > **update_output_ports**(timeStamp)  
     > **update**(timestamp)    
+    > **update_input_ports**()  
+    > **export**()  
+    > **display**()    
 
 - logic_system(logic_device)  
     > **\_\_init\_\_**(name)    
-    > **getName**(generic)  
-    > **displayDevices**()  
-    > **openFile**(pathName)  
-    > **closeFile**()  
-    > **runStep**()  
+    > **start**()  
+    > **open**(fp)
+    > **add_module**(device, t)
+    > **add_signal**(device, port, t)
     > **runUntil**(time)  
-    > **add**(device)  
+    > **runStep**()  
+    > **export**()  
+    > **close**()  
+    > **display**()  
 
 **clock.py**  
 
 - clock(logic_device)  
     > **\_\_init\_\_**(period, shift, width, count, name)  
-    > **display**()  
     > **update**(timeStamp)  
+    > **display**()  
 
 **counter.py**  
-
-- **random_bits**(width)  
 
 - counter(logic_device)  
     > **\_\_init\_\_**(width, name)  
     > **add_clk**(port, subset)  
     > **add_clr**(port, subset)  
-    > **display**()  
     > **update**()  
+    > **display**()  
 
 **rom.py**  
 
-- EOL, SPC, NUL, TAB  
-
 - rom(logic_device)  
-    > **table_check**(table)  
-    > **load**(fp)  
     > **\_\_init\_\_**(table, width, name)  
     > **add_address**(port, subset)  
-    > **display**()  
     > **update**(timeStamp)  
+    > **display**()  
