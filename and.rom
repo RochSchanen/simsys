@@ -1,10 +1,12 @@
-# file: r.rom
-# content: rom data
+# file: and.rom
+# content: rom contains a LUT equivalent to a two inputs AND gate
 # created: 2025 June 3 Tuesday
 # author: Roch Schanen
 
-BITS = 4
-BASE = HEX
+BASE = BIN
+BITS = 1
+
+0 0 0 1
 
 # hash '#' starts a comment line
 # comment lines are skipped 
@@ -13,14 +15,3 @@ BASE = HEX
 # the base can be 'BIN', 'DEC', or 'HEX'
 # the default is 'HEX'
 # each word read is coerced to 'BITS' length
-
-# EXAMPLES:
-
-# % HEX
-# FF FE 00 01
-
-# % BIN
-# 11111111 11111110 00000000 00000001
-
-# % DEC
-# 255 254 000 001

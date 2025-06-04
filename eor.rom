@@ -1,0 +1,17 @@
+# file: eor.rom
+# content: rom contains a LUT equivalent to a two inputs Exclusive-OR gate
+# created: 2025 June 3 Tuesday
+# author: Roch Schanen
+
+BASE = BIN
+BITS = 1
+
+0 1 1 0
+
+# hash '#' starts a comment line
+# comment lines are skipped 
+# empty lines are skipped
+# data are separated by spaces
+# the base can be 'BIN', 'DEC', or 'HEX'
+# the default is 'HEX'
+# each word read is coerced to 'BITS' length

@@ -8,7 +8,7 @@
 '''
     the counter device has a least one input and one set of outputs that
     codes for a binary value. the number of output bits is defined by the
-    parameter "size". the output value is incremented by one on each
+    parameter "bits". the output value is incremented by one on each
     rising edge of the input which is labelled as 'clk'. a counter of n bits
     is counting from 0 to 2^n-1. the counter value is coerced to values
     modulo 2^n. the coercion is applied by clearing all the bits with weight
@@ -23,7 +23,7 @@
     by standard in this project, the output bits are indexed in the same
     order than the characters in the state string. This means that the bit
     weights are in the reverse order. For a numerical conversion, you can use
-    int(STRING[::-1], 2) and for a string conversion, use f'{NUMBER:0{size}b}'.
+    int(STRING[::-1], 2) and for a string conversion, use f'{NUMBER:0{bits}b}'.
 '''
 
 from toolbox import *
@@ -38,15 +38,15 @@ class counter(logic_device):
     clr = None
     clk = None
 
-    def __init__(self, width = 4, name = None):
+    def __init__(self, bits = 4, behav = 'R', name = None):
         # call Device class constructor
         logic_device.__init__(self, name)
         # record configuration
-        self.configuration = width
+        self.configuration = bits
         # instantiate output port
-        self.Q = self.add_output_port(width, "Q")
+        self.Q = self.add_output_port(bits, "Q")
         # set output ports value
-        self.Q.set(random_bits(width))
+        self.Q.set(startup_bits(bits, behav))
         # done
         return
 
@@ -62,20 +62,20 @@ class counter(logic_device):
 
     def update(self, timeStamp):
         # get configuration
-        size = self.configuration
+        bits = self.configuration
         # asynchronous clear on active low
         if self.clr:
             if self.clr.state == '0':
                 # clear output
-                self.Q.set(f'{0:0{size}b}')
+                self.Q.set(f'{0:0{bits}b}')
                 return
         # update on rising edge of trigger
         if self.clk:
             if self.clk.rising:
                 # get incremented state
                 n = int(self.Q.get()[::-1], 2) + 1 
-                # make n string, cut-off to keep LSB(size) only
-                newvalue = f'{n:0{size}b}'[-size:]
+                # make n string, cut-off to keep LSB(bits) only
+                newvalue = f'{n:0{bits}b}'[-bits:]
                 # update output value
                 self.Q.set(newvalue[::-1])
                 return
@@ -86,7 +86,7 @@ class counter(logic_device):
         # get name
         name = self.name
         # get configuration
-        size = self.configuration
+        bits = self.configuration
         # get current values
         value = f'Q={self.Q.get()[::-1]}'
         # display
@@ -98,7 +98,7 @@ class counter(logic_device):
             print()
         if self.clr:
             print(f"  clear {self.clr.get()}")
-        print(f"  size {size}")
+        print(f"  bits {bits}")
         print(f"  value {value}")
         return
 
