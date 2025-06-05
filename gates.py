@@ -13,7 +13,7 @@ from core import logic_device
 # inputs with multiple bits are allowed like for bus operations:
 # this is equivalent to the action of a set of parallele gates.
 
-class gate(logic_device):
+class _gate(logic_device):
 
     def __init__(self, bits = 1, name = None):
         # call parent class constructor
@@ -69,7 +69,7 @@ class gate(logic_device):
 # equivalent to a 'COPY' bits
 # (this is not a recommanded usage)
 
-class gate_and(gate):
+class gate_and(_gate):
 
     gn = "AND"
 
@@ -82,7 +82,7 @@ class gate_and(gate):
 # equivalent to an 'INVERSE' bits
 # (this is not a recommanded usage)
 
-class gate_nand(gate):
+class gate_nand(_gate):
 
     gn = "NAND"
 
@@ -95,7 +95,7 @@ class gate_nand(gate):
 # equivalent to a 'COPY' bits
 # (this is not a recommanded usage)
 
-class gate_or(gate):
+class gate_or(_gate):
 
     gn = "OR"
 
@@ -108,7 +108,7 @@ class gate_or(gate):
 # equivalent to an 'INVERSE' bits
 # (this is not a recommanded usage)
 
-class gate_nor(gate):
+class gate_nor(_gate):
 
     gn = "NOR"
 
@@ -121,7 +121,7 @@ class gate_nor(gate):
 # equivalent to a 'ALL BITS EQUAL'
 # (this is not a recommanded usage)
 
-class gate_equ(gate):
+class gate_equ(_gate):
 
     gn = "EQU"
 
@@ -134,7 +134,7 @@ class gate_equ(gate):
 # equivalent to a 'NOT ALL BITS EQUAL'
 # (this is not a recommanded usage)
 
-class gate_eor(gate):
+class gate_eor(_gate):
 
     gn = "EOR"
 
@@ -145,7 +145,7 @@ class gate_eor(gate):
 ######################################### NOT
 # no more than one input is allowed
 
-class gate_not(gate):
+class gate_not(_gate):
 
     gn = "NOT"
 
@@ -160,7 +160,7 @@ class gate_not(gate):
 if __name__ == "__main__":
 
     TESTS = [
-        'AND', 
+        # 'AND', 
         # 'NAND',
         # 'OR'  ,
         # 'NOR' ,
