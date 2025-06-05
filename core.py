@@ -111,13 +111,13 @@ class logic_device():
 
     def add_input_port(self, port, name = None, subset = None):
         name = name_duplicate(self.inputs, name)
-        new_port = logic_port(name, port = port)
+        new_port = logic_port(name, None, port, subset)
         self.inputs.append(new_port)
         return new_port
 
     def add_output_port(self, bits, name = None, port = None, subset = None):
         name = name_duplicate(self.outputs, name)
-        new_port = logic_port(name, bits = bits, port = port)
+        new_port = logic_port(name, bits, port, subset)
         self.outputs.append(new_port)
         return new_port
 

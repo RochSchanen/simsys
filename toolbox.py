@@ -120,6 +120,9 @@ def lut(table, *inputs):
 if __name__ == "__main__":
 
     TESTS = [
+        # 'name_duplicate',
+        # 'random_bits',
+        # 'startup_bits',
         # 'load_table',
         'lut',
         ]
@@ -179,3 +182,43 @@ if __name__ == "__main__":
         ls.open("./export.vcd")
         ls.run_until(150)
         ls.close()
+
+    if 'startup_bits' in TESTS:
+
+        print(startup_bits(16, '0'))
+        print(startup_bits(16, '1'))
+        print(startup_bits(16, 'U'))
+        print(startup_bits(16, 'R'))
+
+    if 'random_bits' in TESTS:
+
+        print(random_bits(16))
+        print(random_bits(16))
+        print(random_bits(16))
+        print(random_bits(16))
+
+    if 'name_duplicate' in TESTS:
+
+        # define a test class with the name property 
+        class objectclass():
+            def setname(self, name):
+                self.name = name
+
+        # declare a empty list of objects
+        O = []
+        # instantiate 8 objects with same generic name 'A'
+        for i in range(8):
+            
+            # create new object
+            o = objectclass()
+            # use name_duplicate() to build a new name
+            n = name_duplicate(O, "A")
+            # set object name using the new name
+            o.setname(n)
+            # append new object to list
+            O.append(o)
+            
+            # repeat 8 times
+
+        # print the name for each object
+        print([o.name for o in O])
