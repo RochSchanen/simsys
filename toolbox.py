@@ -11,6 +11,8 @@ from numpy.random import randint
 
 EOL, SPC, NUL, TAB = f'\n', f' ', f'', f'\t'
 
+LOW, HGH = f'0', f'1'
+
 ######################################################################
 ###                                                     NAME_DUPLICATE
 ######################################################################
@@ -134,7 +136,6 @@ if __name__ == "__main__":
         print(lut("ABCD", "1", "0"))
         print(lut("ABCD", "0", "1"))
         print(lut("ABCD", "1", "1"))
-
         print("three single bit inputs")
         print(lut("ABCDEFGH", "0", "0", "0"))
         print(lut("ABCDEFGH", "1", "0", "0"))
@@ -144,13 +145,11 @@ if __name__ == "__main__":
         print(lut("ABCDEFGH", "1", "0", "1"))
         print(lut("ABCDEFGH", "0", "1", "1"))
         print(lut("ABCDEFGH", "1", "1", "1"))
-        
         print("two quadruple bits inputs")
         print(lut("ABCD", "0000", "0000"))
         print(lut("ABCD", "1111", "0000"))
         print(lut("ABCD", "0000", "1111"))
         print(lut("ABCD", "1111", "1111"))
-        
         print("three quadruple bits inputs")
         print(lut("ABCDEFGH", "0000", "0000", "0000"))
         print(lut("ABCDEFGH", "1111", "0000", "0000"))
@@ -208,7 +207,6 @@ if __name__ == "__main__":
         O = []
         # instantiate 8 objects with same generic name 'A'
         for i in range(8):
-            
             # create new object
             o = objectclass()
             # use name_duplicate() to build a new name
@@ -217,8 +215,5 @@ if __name__ == "__main__":
             o.setname(n)
             # append new object to list
             O.append(o)
-            
-            # repeat 8 times
-
         # print the name for each object
         print([o.name for o in O])

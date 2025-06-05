@@ -92,7 +92,7 @@ class counter(logic_device):
         # display
         print(f"<counter> {name}")
         if self.clk:
-            print(f"  trigger {self.clk.get()}", end="")
+            print(f"  clock {self.clk.get()}", end="")
             if self.clk.rising:
                 print(", rising", end="")
             print()
