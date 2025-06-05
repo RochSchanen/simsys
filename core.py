@@ -17,9 +17,10 @@ class logic_port():
     # constructor
     def __init__(self,
             name   = None,
-            width  = None,
+            bits   = None,
             port   = None,
             subset = None,
+            # behav  = 'U',
             ):
         
         # make signal name
@@ -31,7 +32,7 @@ class logic_port():
         # declare port state
         self.state = None
         # set port state
-        if width: self.set('U'*width)
+        if bits: self.set('U'*bits)
         # get target port size
         n = port.size() if port else None
         # make port subset
@@ -114,9 +115,9 @@ class logic_device():
         self.inputs.append(new_port)
         return new_port
 
-    def add_output_port(self, width, name = None, port = None, subset = None):
+    def add_output_port(self, bits, name = None, port = None, subset = None):
         name = name_duplicate(self.outputs, name)
-        new_port = logic_port(name, width = width, port = port)
+        new_port = logic_port(name, bits = bits, port = port)
         self.outputs.append(new_port)
         return new_port
 
@@ -220,11 +221,11 @@ class logic_system(logic_device):
         # make label
         label = f"{device.name}_{port.name}"
         # get signal identifier and size
-        signal, width = port.signal, port.size()
+        signal, bits = port.signal, port.size()
         # check for multiple bits
-        if width > 1: label += f"[{width-1}:0]"
+        if bits > 1: label += f"[{bits-1}:0]"
         # add signal
-        self.fh.write(f"{align}$var wire {width} {signal} {label} $end{EOL}")
+        self.fh.write(f"{align}$var wire {bits} {signal} {label} $end{EOL}")
         # done
         return
 

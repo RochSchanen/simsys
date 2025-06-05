@@ -104,27 +104,78 @@ def load_table(fp):
     return table, bits
 
 ######################################################################
+#                                                                  LUT
+######################################################################
+# inputs must ordered with the least significant bit first
+
+def lut(table, *inputs):
+    # build table of addresses for each inputs bit
+    A = [int(NUL.join(I), 2) for I in zip(*(inputs[::-1]))]
+    return NUL.join([table[a] for a in A])
+
+######################################################################
 #                                                                 TEST
 ######################################################################
 
 if __name__ == "__main__":
 
-    from core import logic_system
-    from counter import counter
-    from clock import clock
-    from rom import rom
+    TESTS = [
+        # 'load_table',
+        'lut',
+        ]
 
-    ls = logic_system()
-    clk = ls.add(clock(name = "clock"))
-    rst = ls.add(clock(20, 15, 5, 1, name = "reset"))
-    cnt = ls.add(counter(2, name = "counter"))
-    cnt.add_clk(clk.Q)
-    cnt.add_clr(rst.Q)
-    gate1 = ls.add(rom(*load_table(f'and.rom'), name = 'AND'))
-    gate1.add_address(cnt.Q)
-    gate2 = ls.add(rom(*load_table(f'eor.rom'), name = 'EOR'))
-    gate2.add_address(cnt.Q)
-    ls.display()
-    ls.open("./export.vcd")
-    ls.run_until(150)
-    ls.close()
+    if 'lut' in TESTS:
+
+        print("two single bit inputs")
+        print(lut("ABCD", "0", "0"))
+        print(lut("ABCD", "1", "0"))
+        print(lut("ABCD", "0", "1"))
+        print(lut("ABCD", "1", "1"))
+
+        print("three single bit inputs")
+        print(lut("ABCDEFGH", "0", "0", "0"))
+        print(lut("ABCDEFGH", "1", "0", "0"))
+        print(lut("ABCDEFGH", "0", "1", "0"))
+        print(lut("ABCDEFGH", "1", "1", "0"))
+        print(lut("ABCDEFGH", "0", "0", "1"))
+        print(lut("ABCDEFGH", "1", "0", "1"))
+        print(lut("ABCDEFGH", "0", "1", "1"))
+        print(lut("ABCDEFGH", "1", "1", "1"))
+        
+        print("two quadruple bits inputs")
+        print(lut("ABCD", "0000", "0000"))
+        print(lut("ABCD", "1111", "0000"))
+        print(lut("ABCD", "0000", "1111"))
+        print(lut("ABCD", "1111", "1111"))
+        
+        print("three quadruple bits inputs")
+        print(lut("ABCDEFGH", "0000", "0000", "0000"))
+        print(lut("ABCDEFGH", "1111", "0000", "0000"))
+        print(lut("ABCDEFGH", "0000", "1111", "0000"))
+        print(lut("ABCDEFGH", "1111", "1111", "0000"))
+        print(lut("ABCDEFGH", "0000", "0000", "1111"))
+        print(lut("ABCDEFGH", "1111", "0000", "1111"))
+        print(lut("ABCDEFGH", "1111", "1111", "1111"))
+        print(lut("ABCDEFGH", "0000", "1111", "1111"))
+
+    if 'load_table' in TESTS:
+
+        from core import logic_system
+        from counter import counter
+        from clock import clock
+        from rom import rom
+
+        ls = logic_system()
+        clk = ls.add(clock(name = "clock"))
+        rst = ls.add(clock(20, 15, 5, 1, name = "reset"))
+        cnt = ls.add(counter(2, name = "counter"))
+        cnt.add_clk(clk.Q)
+        cnt.add_clr(rst.Q)
+        gate1 = ls.add(rom(*load_table(f'and.rom'), name = 'AND'))
+        gate1.add_address(cnt.Q)
+        gate2 = ls.add(rom(*load_table(f'eor.rom'), name = 'EOR'))
+        gate2.add_address(cnt.Q)
+        ls.display()
+        ls.open("./export.vcd")
+        ls.run_until(150)
+        ls.close()
