@@ -8,10 +8,12 @@ from numpy.random import randint
 ######################################################################
 ###                                                            SYMBOLS
 ######################################################################
-
+# strings
 EOL, SPC, NUL, TAB = f'\n', f' ', f'', f'\t'
-
-LOW, HGH = f'0', f'1'
+# bit levels
+LOW, HGH, UKN = f'0', f'1', f'U'
+# parsing
+# COM, SEP = f'#', f'='
 
 ######################################################################
 ###                                                     NAME_DUPLICATE
@@ -51,10 +53,11 @@ def random_bits(bits = 1, block = 8):
 
 def startup_bits(bits = 1, behav = 'U'):
     return {
-        'U': 'U'*bits,
+        '0': LOW*bits,
+        '1': HGH*bits,
+        'U': UKN*bits,
         'R': random_bits(bits),
-        '0': '0'*bits,
-        '1': '1'*bits,
+        'I': UKN*bits, # quick fix, may require some clean-up, added for clock()
         }[behav]
 
 ######################################################################
@@ -108,12 +111,11 @@ def load_table(fp):
 ######################################################################
 #                                                                  LUT
 ######################################################################
-# inputs must ordered with the least significant bit first
+# inputs are ordered with the least significant bit first
 
 def lut(table, *inputs):
-    # build table of addresses for each inputs bit
-    A = [int(NUL.join(I), 2) for I in zip(*(inputs[::-1]))]
-    return NUL.join([table[a] for a in A])
+    A = [NUL.join(I) for I in zip(*(inputs[::-1]))]
+    return NUL.join([UKN if UKN in a else table[int(a, 2)] for a in A])
 
 ######################################################################
 #                                                                 TEST
@@ -126,35 +128,35 @@ if __name__ == "__main__":
         # 'random_bits',
         # 'startup_bits',
         # 'load_table',
-        'lut',
+        # 'lut',
         ]
 
     if 'lut' in TESTS:
 
         print("two single bit inputs")
-        print(lut("ABCD", "0", "0"))
-        print(lut("ABCD", "1", "0"))
+        print(lut("ABCD", "U", "0"))
+        print(lut("ABCD", "1", "U"))
         print(lut("ABCD", "0", "1"))
         print(lut("ABCD", "1", "1"))
         print("three single bit inputs")
-        print(lut("ABCDEFGH", "0", "0", "0"))
-        print(lut("ABCDEFGH", "1", "0", "0"))
-        print(lut("ABCDEFGH", "0", "1", "0"))
+        print(lut("ABCDEFGH", "U", "0", "0"))
+        print(lut("ABCDEFGH", "1", "U", "0"))
+        print(lut("ABCDEFGH", "0", "1", "U"))
         print(lut("ABCDEFGH", "1", "1", "0"))
         print(lut("ABCDEFGH", "0", "0", "1"))
         print(lut("ABCDEFGH", "1", "0", "1"))
         print(lut("ABCDEFGH", "0", "1", "1"))
         print(lut("ABCDEFGH", "1", "1", "1"))
         print("two quadruple bits inputs")
-        print(lut("ABCD", "0000", "0000"))
-        print(lut("ABCD", "1111", "0000"))
-        print(lut("ABCD", "0000", "1111"))
-        print(lut("ABCD", "1111", "1111"))
+        print(lut("ABCD", "U000", "0000"))
+        print(lut("ABCD", "1111", "0U00"))
+        print(lut("ABCD", "0000", "11U1"))
+        print(lut("ABCD", "1111", "111U"))
         print("three quadruple bits inputs")
-        print(lut("ABCDEFGH", "0000", "0000", "0000"))
-        print(lut("ABCDEFGH", "1111", "0000", "0000"))
-        print(lut("ABCDEFGH", "0000", "1111", "0000"))
-        print(lut("ABCDEFGH", "1111", "1111", "0000"))
+        print(lut("ABCDEFGH", "U000", "0000", "0000"))
+        print(lut("ABCDEFGH", "1111", "0U00", "0000"))
+        print(lut("ABCDEFGH", "0000", "1111", "00U0"))
+        print(lut("ABCDEFGH", "1111", "1111", "000U"))
         print(lut("ABCDEFGH", "0000", "0000", "1111"))
         print(lut("ABCDEFGH", "1111", "0000", "1111"))
         print(lut("ABCDEFGH", "1111", "1111", "1111"))
@@ -188,9 +190,11 @@ if __name__ == "__main__":
         print(startup_bits(16, '1'))
         print(startup_bits(16, 'U'))
         print(startup_bits(16, 'R'))
+        print(startup_bits(16, 'I'))
 
     if 'random_bits' in TESTS:
 
+        print(random_bits(16))
         print(random_bits(16))
         print(random_bits(16))
         print(random_bits(16))

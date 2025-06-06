@@ -40,18 +40,18 @@ class clock(logic_device):
             shift  = 10,    # phase shift : 10 ns, half period
             width  = 10,    # pulse width : 10 ns, symmetrical
             count  = None,  # number of pulses: None is unlimited
-            name   = None,  # device name : None is use generic
+            name   = None,  # device name : None is no export
+            behav  = 'U',   # startup behaviour
             ):
         # call parent class constructor
         logic_device.__init__(self, name)
         # record configuration
         self.configuration = period, width, shift, count
         # instantiate output ports
-        self.Q = self.add_output_port(1, "Q")
-        # compute clock phase
-        phase = (0 - shift) % period
-        # set output ports value
-        self.Q.set(['0','1'][phase < width])
+        self.Q = self.add_output_port(1, "Q", None, None, behav)
+        # immediate update
+        if behav == 'I':
+            self.update(0)
         # done
         return
 
@@ -63,12 +63,12 @@ class clock(logic_device):
         # unlimited pulse train
         if count == None:
             # update outputs values
-            self.Q.set(['0','1'][phase < width])
+            self.Q.set([LOW, HGH][phase < width])
             return
         # pulse train completed
         if count*period > timeStamp:
             # update outputs values
-            self.Q.set(['0','1'][phase < width])
+            self.Q.set([LOW, HGH][phase < width])
             return
         # done
         return

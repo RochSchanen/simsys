@@ -38,15 +38,13 @@ class counter(logic_device):
     clr = None
     clk = None
 
-    def __init__(self, bits = 4, behav = 'R', name = None):
+    def __init__(self, bits = 4, name = None, behav = 'U'):
         # call Device class constructor
         logic_device.__init__(self, name)
         # record configuration
         self.configuration = bits
         # instantiate output port
-        self.Q = self.add_output_port(bits, "Q")
-        # set output ports value
-        self.Q.set(startup_bits(bits, behav))
+        self.Q = self.add_output_port(bits, "Q", None, None, behav)
         # done
         return
 
@@ -65,7 +63,7 @@ class counter(logic_device):
         bits = self.configuration
         # asynchronous clear on active low
         if self.clr:
-            if self.clr.state == '0':
+            if self.clr.state == LOW:
                 # clear output
                 self.Q.set(f'{0:0{bits}b}')
                 return

@@ -15,14 +15,7 @@ class logic_port():
     signal_counter = 0
 
     # constructor
-    def __init__(self,
-            name   = None,
-            bits   = None,
-            port   = None,
-            subset = None,
-            # behav  = 'U',
-            ):
-        
+    def __init__(self, name = None, bits = None, port = None, subset = None, behav = 'U'):
         # make signal name
         self.signal = f"W{self.signal_counter}"
         # increment signal counter
@@ -32,7 +25,7 @@ class logic_port():
         # declare port state
         self.state = None
         # set port state
-        if bits: self.set('U'*bits)
+        if bits: self.set(startup_bits(bits, behav))
         # get target port size
         n = port.size() if port else None
         # make port subset
@@ -66,8 +59,8 @@ class logic_port():
         # ...
         # single bit case
         if len(new_state) == 1:
-            self.rising  = (self.state, new_state) == ('0','1')
-            self.falling = (self.state, new_state) == ('1','0')
+            self.rising  = (self.state, new_state) == (LOW, HGH)
+            self.falling = (self.state, new_state) == (HGH, LOW)
         # update input port state
         self.set(new_state)
         # done
@@ -115,9 +108,9 @@ class logic_device():
         self.inputs.append(new_port)
         return new_port
 
-    def add_output_port(self, bits, name = None, port = None, subset = None):
+    def add_output_port(self, bits, name = None, port = None, subset = None, behav = 'U'):
         name = name_duplicate(self.outputs, name)
-        new_port = logic_port(name, bits, port, subset)
+        new_port = logic_port(name, bits, port, subset, behav)
         self.outputs.append(new_port)
         return new_port
 
@@ -266,6 +259,13 @@ class logic_system(logic_device):
         for d in self.devices: d.display()
         # done
         return
+
+######################################################################
+#                                                    FIXED VALUE PORTS
+######################################################################
+
+VCC = logic_port('VCC', 1, None, None, HGH)
+GND = logic_port('VSS', 1, None, None, LOW)
 
 ######################################################################
 #                                                                 TEST

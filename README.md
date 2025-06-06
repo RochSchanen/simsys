@@ -14,9 +14,7 @@
 
 **to do list**
 
-    + create port constants vcc and gnd?
     + add parallel, serial load to counter
-    + add standard gate tables
     + added delays for wires and devices
     + register, memory, ALU, processor
     + interactivity with other systems?
@@ -32,4 +30,3 @@
         '-' for don't care
         'W' for weak
         'X' for collision
-    + add startup behaviour at the port level?

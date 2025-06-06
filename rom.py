@@ -56,8 +56,8 @@ class rom(logic_device):
     def __init__(self,
             table = '1110', # the table is always stored as a binary string
             bits =      1,  # the table is subdivided in words of length 'bits'
-            behav =    'U', # behaviour for un-defined bit(s)
-            name  =   None,
+            name  =   None, # None means no export
+            behav =    'U', # behaviour for undefined bit(s)
             ):
         # call parent class constructor
         logic_device.__init__(self, name)
@@ -72,9 +72,7 @@ class rom(logic_device):
         # record configuration
         self.configuration = nn, bits, table
         # instantiate output port
-        self.Q = self.add_output_port(bits, "Q")
-        # set default output port value
-        self.Q.set(table[:bits])
+        self.Q = self.add_output_port(bits, "Q", None, None, 'U')
         # done
         return
 
@@ -88,6 +86,10 @@ class rom(logic_device):
         bits, bits, table = self.configuration
         # build address string from input ports
         address_string = NUL.join([p.get() for p in self.inputs])
+        # check for un-intialised levels
+        if 'U' in address_string:
+            self.Q.set(UKN*bits)
+            return
         # convert string to integer
         address_value = int(address_string[::-1], 2)
         # update output value
@@ -146,8 +148,8 @@ if __name__ == "__main__":
     cnt = ls.add(counter(2, name = "counter"))
     cnt.add_clk(clk.Q)
     cnt.add_clr(rst.Q)
-    gate = ls.add(rom(name = 'gate'))
-    gate.add_address(cnt.Q)
+    mem = ls.add(rom(name = 'mem'))
+    mem.add_address(cnt.Q)
     ls.display()
     ls.open("./export.vcd")
     ls.run_until(150)
