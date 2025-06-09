@@ -113,7 +113,7 @@ if __name__ == "__main__":
     from clock    import clock
     from counter  import counter
     from register import register
-    from gates    import gate_not
+    from gate     import gate_not
 
     ls = logic_system()
     clk  = ls.add(clock(name = 'clock'))
