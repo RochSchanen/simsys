@@ -54,10 +54,10 @@ from math import ceil
 class rom(logic_device):
 
     def __init__(self,
-            table = '1110', # the table is always stored as a binary string
-            bits =      1,  # the table is subdivided in words of length 'bits'
-            name  =   None, # None means no export
-            behav =    'U', # behaviour for undefined bit(s)
+            table   = '1110', # the table is always stored as a binary string
+            bits    =     1 , # the table is subdivided in words of length 'bits'
+            name    =  None , # None means no export
+            filling =    'U', # filling mode for data padding
             ):
         # call parent class constructor
         logic_device.__init__(self, name)
@@ -68,7 +68,7 @@ class rom(logic_device):
         # compute expansion length
         n = (2**nn-words)*bits
         # expand the table up to 2^nn                
-        table += startup_bits(n, behav)
+        table += startup_bits(n, filling)
         # record configuration
         self.configuration = nn, bits, table
         # instantiate output port

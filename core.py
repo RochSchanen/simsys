@@ -265,7 +265,7 @@ class logic_system(logic_device):
 ######################################################################
 
 VCC = logic_port('VCC', 1, None, None, HGH)
-GND = logic_port('VSS', 1, None, None, LOW)
+GND = logic_port('GND', 1, None, None, LOW)
 
 ######################################################################
 #                                                                 TEST
