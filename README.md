@@ -19,7 +19,7 @@
     + re-introduce generic naming of devices.
     + add parallel, serial load to counter
     + added delays for wires and devices
-    + register, memory, ALU, processor
+    + memory, ALU, processor
     + interactivity with other systems?
     + add more state:
         so far:

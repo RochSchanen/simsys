@@ -95,7 +95,7 @@ class rom(logic_device):
         bits, bits, table = self.configuration
         # build address string from input ports
         address_string = NUL.join([p.get() for p in self.inputs])
-        # check for un-intialised levels
+        # check for un-intialised bit(s)
         if 'U' in address_string:
             self.Q.set(UKN*bits)
             return
