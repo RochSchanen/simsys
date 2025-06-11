@@ -14,6 +14,9 @@
 
 **to do list**
 
+    + add display header in the toolbox
+    + add export flag set by default instead of using names.
+    + re-introduce generic naming of devices.
     + add parallel, serial load to counter
     + added delays for wires and devices
     + register, memory, ALU, processor

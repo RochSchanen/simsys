@@ -15,12 +15,6 @@
 
     optional inputs can be added to further control the counter. the counter
     can be cleared at any time by using the asynchronous port labelled "clr". 
-
-    by convention in this project, the output bits are indexed in the same order
-    than the characters in the state string. This means that the bit weights are
-    in the reverse order. For a numerical conversion, you should use the following
-    expression: int(STRING[::-1], 2) and for a integer value to string conversion,
-    you should use the expression f'{NUMBER:0{bits}b}'.
 '''
 
 from toolbox import *

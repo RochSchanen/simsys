@@ -4,20 +4,15 @@
 # author: Roch Schanen
 
 '''
-    the register device has one or more inputs which concatenation must match
-    the and the output width. the number of output bits is defined by the
-    parameter "bits". the input value is copied to ouput value on each rising
-    edge of the input clock labelled 'clk'.
+    the register device has one or more inputs which concatenation
+    must match the output width. the number of output bits is
+    defined by the parameter "bits". the input port value is copied
+    to the output port state on each rising edge of the input clock
+    which is labelled 'clk'.
 
-    an optional inputs can be added to further control the register. the
-    register can be cleared at any time by using the asynchronous clear signal
-    labelled "clr".
-
-    by convention in this project, the output bits are indexed in the same order
-    than the characters in the state string. This means that the bit weights are
-    in the reverse order. For a numerical conversion, you should use the following
-    expression: int(STRING[::-1], 2) and for a integer value to string conversion,
-    you should use the expression f'{NUMBER:0{bits}b}'.
+    an optional input can be added to further control the register.
+    the register can be cleared at any time by using the asynchronous
+    clear signal which is labelled "clr".
 '''
 
 from toolbox import *

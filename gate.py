@@ -6,6 +6,8 @@
 from toolbox import *
 from core import logic_device
 
+# to do: add table to configuration?
+
 ######################################################################
 ###                                                              GATES
 ######################################################################
@@ -14,6 +16,8 @@ from core import logic_device
 # action of a set of parallel gates on each bits of the inputs.
 
 class _gate(logic_device):
+
+    gn = "generic_name"
 
     def __init__(self, bits = 1, name = None):
         # call parent class constructor
@@ -38,6 +42,7 @@ class _gate(logic_device):
         # done
         return
 
+    # this is gate specific
     def make_table(self, n):
         pass
 
@@ -57,7 +62,7 @@ class _gate(logic_device):
         # get current values
         value = f'Q={self.Q.get()[::-1]}'
         # display
-        print(f"<gate_{self.gn}> {name}")
+        print(f"<{self.gn}> {name}")
         print(f"  bits {bits}")
         print(f"  table {self.table}")
         print(f"  value {value}")
@@ -65,77 +70,74 @@ class _gate(logic_device):
         return
 
 ######################################### AND
-# for only one input, this is
-# equivalent to a 'COPY' bits
+# for only one input, this is equivalent to a 'COPY' bits
+# (this is not recommanded since it is not standard)
 
 class gate_and(_gate):
 
-    gn = "AND"
+    gn = "gate_AND"
 
     def make_table(self, n):
         self.table = LOW*(n-1) + HGH*1
         return
 
 ######################################### NAND (not AND)
-# for only one input, this is
-# equivalent to an 'INVERSE' bits
+# for only one input, this is equivalent to an 'INVERSE' bits
+# (this is not recommanded since it is not standard)
 
 class gate_nand(_gate):
 
-    gn = "NAND"
+    gn = "gate_NAND"
 
     def make_table(self, n):
         self.table = HGH*(n-1) + LOW*1
         return
 
 ######################################### OR
-# for only one input, this is
-# equivalent to a 'COPY' bits
+# for only one input, this is equivalent to a 'COPY' bits
+# (this is not recommanded since it is not standard)
 
 class gate_or(_gate):
 
-    gn = "OR"
+    gn = "gate_OR"
 
     def make_table(self, n):
         self.table = LOW*1 + HGH*(n-1)
         return
 
 ######################################### NOR (not OR)
-# for only one input, this is
-# equivalent to an 'INVERSE' bits
+# for only one input, this is equivalent to an 'INVERSE' bits
+# (this is not recommanded since it is not standard)
 
 class gate_nor(_gate):
 
-    gn = "NOR"
+    gn = "gate_NOR"
 
     def make_table(self, n):
         self.table = HGH*1 + LOW*(n-1)
         return
 
 ######################################### EQU (equal)
-# for only one input, this is equivalent
-# to a set of constant
-# 'HIGH' bits
-# for more than two inputs, this is
-# equivalent to a 'ALL BITS EQUAL'
+# for only one input, this is equivalent to a set of constant 'HIGH' bits.
+# for more than two inputs, this is equivalent to a 'ALL BITS EQUAL'.
+# (none of this is recommanded since it is not standard)
 
 class gate_equ(_gate):
 
-    gn = "EQU"
+    gn = "gate_EQU"
 
     def make_table(self, n):
         self.table = HGH*1 + LOW*(n-2) + HGH*1
         return
 
 ######################################### EOR (exclusive OR)
-# for only one input, this is equivalent
-# to a set of constant 'LOW' bits
-# for more than two inputs, this is
-# equivalent to a 'NOT ALL BITS EQUAL'
+# for only one input, this is equivalent to a set of constant 'LOW' bits.
+# for more than two inputs, this is equivalent to a 'NOT ALL BITS EQUAL'.
+# (none of this is recommanded since it is not standard)
 
 class gate_eor(_gate):
 
-    gn = "EOR"
+    gn = "gate_EOR"
 
     def make_table(self, n):
         self.table = LOW*1 + HGH*(n-2) + LOW*1
@@ -144,10 +146,9 @@ class gate_eor(_gate):
 ######################################################################
 ###                                                           GATE_NOT
 ######################################################################
-# for multiple inputs with multiple bits, all the inputs bits
-# are concatenated as a single set of parallel bits to be
-# inverted: the number of input bits should obviously match
-# the number of output bits.  
+# for multiple inputs with multiple bits, all the inputs bits are concatenated
+# as a single set of parallel bits to be inverted: the number of input bits
+# should obviously match the number of output bits.
 
 class gate_not(_gate):
 

@@ -41,17 +41,20 @@ class clock(logic_device):
             width  = 10,    # pulse width : 10 ns, symmetrical
             count  = None,  # number of pulses: None is unlimited
             name   = None,  # device name : None is no export
-            behav  = 'U',   # startup behaviour
+            behav  = 'U',   # use 'I' for immediate update 
             ):
         # call parent class constructor
         logic_device.__init__(self, name)
         # record configuration
         self.configuration = period, width, shift, count
-        # instantiate output ports
-        self.Q = self.add_output_port(1, "Q", None, None, behav)
-        # immediate update
+        # instanciate and update immediately
         if behav == 'I':
+            self.Q = self.add_output_port(1, "Q")
             self.update(0)
+            # done
+            return        
+        # simply instantiate output ports
+        self.Q = self.add_output_port(1, "Q", None, None, behav)
         # done
         return
 

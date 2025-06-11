@@ -6,44 +6,53 @@
 # author: Roch Schanen
 
 ''' 
-    the ROM device has one set of inputs ports, the address, and one set
-    of output ports, the data.
+    the ROM device has one set of inputs ports, the address,
+    and one output port, the data.
 
-    the ROM data are defined by a character string of '0' and '1'.
-    the data bits are indexed in the same order than the characters:
+    the ROM data are defined by a character string of '0' and
+    '1' or other valid bit representation. the data bits are
+    indexed in the same order than characters in a string:
     bit 0 is the first character in the string.
 
-    the string is split into groups which nn is given by the 'bits'
-    parameter. This corresponds to the number of output bits.
+    the string is split into words which length is given by
+    the 'bits' parameter. This corresponds to the number of
+    output bits.
 
-    for an inputs address of nn n. the table must contain 2^n values.
-    That is a table of total binary length 2^n*bits.
+    for an inputs address of length n. the table must contain
+    2^n values. That is a table of total length bits*2^n.
 
-    in the case the binary table length does not match the required
-    length, the rest of the table is automatically extended with 'U'
-    values. This allows for some flexibility during project development.
+    in case the table length does not match the required length,
+    the rest of the table is automatically extended. The values
+    of the addtional data depends on the parameter "filling".
+    the value of the filling parameter can be '0', '1', 'U', or
+    'R': the same as for startup_bits().
 
-    the address zero always points to the left most character of the
-    table string.
+    the address zero always points to the left most character
+    of the string that forms the table.
 
-    the least significant bit of the address is defined by the first input
-    port that is instantiated. The most significant bit of the address is
-    defined by the last input port that is instantiated.
+    the least significant bit of the address is defined by the
+    first input port that is instantiated. The most significant
+    bit of the address is defined by the last input port that
+    is instantiated.
 
-    the ROM output is updated as soon as the input address is updated.
+    the ROM output is updated as soon as the input address is
+    updated.
+    
+    if the address contains a single 'U', the all of the output
+    bits are set to 'U'.
 
-    simple two inputs gates or more complex look-up tables can be easily
-    created using the ROM device.
+    The startup bit values are always 'U'.
 
-    if the table string is replaced with a valid file path, the data
-    contained in the file will be used as the table. see the 'rom.txt'
-    file for example.
+    to load a table from a file, use the load_table() function
+    from the toolbox module. 
 '''
 
 from toolbox import *
 from core import logic_device
 from numpy import log as ln
 from math import ceil
+
+_DISPLAY_MAX = 80 # maximum characters per lines for table display
 
 ######################################################################
 ###                                                                ROM
@@ -71,7 +80,7 @@ class rom(logic_device):
         table += startup_bits(n, filling)
         # record configuration
         self.configuration = nn, bits, table
-        # instantiate output port
+        # instantiate output port (startup is always 'U')
         self.Q = self.add_output_port(bits, "Q", None, None, 'U')
         # done
         return
@@ -115,13 +124,12 @@ class rom(logic_device):
         for i in range(2**nn):
             # build up display string
             s += f"{table[i*bits:(i+1)*bits][::-1]}{SPC}"
-            # limit lines up to 40 characters
-            if len(s) > 80:
+            # limit lines up to '_DISPLAY_MAX' characters
+            if len(s) > _DISPLAY_MAX:
                 print(f"{s}")
                 s = SPC*align
-        # print table last data
-        if len(s) > align:
-            print(f"{s}")
+        # print last table line, less than '_DISPLAY_MAX'
+        if len(s) > align: print(f"{s}")
         # build address string from input ports
         address_string = NUL.join([p.get() for p in self.inputs])
         # detect length mismatch

@@ -8,12 +8,15 @@ from numpy.random import randint
 ######################################################################
 ###                                                            SYMBOLS
 ######################################################################
-# strings
+
+# general strings
 EOL, SPC, NUL, TAB = f'\n', f' ', f'', f'\t'
-# bit levels
+
+# bit representation
 LOW, HGH, UKN = f'0', f'1', f'U'
-# parsing
-# COM, SEP = f'#', f'='
+
+# load table parsing symbols
+_COM, _SEP = f'#', f'='
 
 ######################################################################
 ###                                                     NAME_DUPLICATE
@@ -57,7 +60,6 @@ def startup_bits(bits = 1, behav = 'U'):
         '1': HGH*bits,
         'U': UKN*bits,
         'R': random_bits(bits),
-        'I': UKN*bits, # quick fix, may require some clean-up, added for clock()
         }[behav]
 
 ######################################################################
@@ -83,15 +85,15 @@ def load_table(fp):
         # strip heading spaces
         line = line.lstrip(SPC)
         # skip comment lines
-        if line[0] == '#': continue
+        if line[0] == _COM: continue
         # parse BITS
         if line[:4] == 'BITS':
-            (key, value) = line.split('=')
+            (key, value) = line.split(_SEP)
             bits = int(value.strip())
             continue
         # parse BASE
         if line[:4] == 'BASE':
-            (key, value) = line.split('=')
+            (key, value) = line.split(_SEP)
             base = {
                 'HEX': 16,
                 'DEC': 10,
