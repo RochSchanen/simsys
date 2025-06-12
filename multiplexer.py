@@ -16,6 +16,8 @@
 
 from toolbox import *
 from core import logic_device
+from numpy import log as ln
+from math import ceil
 
 ######################################################################
 ###                                                        MULTIPLEXER
@@ -66,21 +68,35 @@ class multiplexer(logic_device):
         return
 
     def display(self):
-        # get name
+
         name = self.name
-        # get configuration
-        bits = self.configuration
-        # get current values
-        input_address = NUL.join([s.get() for s in self.S])
-        input_table = NUL.join([a.get() for a in self.A])
-        output_state = self.Q.get()[::-1]
-        address_length = len(input_address)
+
+        state = self.Q.get()
+        adrstr = NUL.join([s.get() for s in self.S])
+        datstr = NUL.join([a.get() for a in self.A])
+        n , nn, m = len(state), 1<<len(adrstr), len(datstr)
+
         # display
         print(f"<multiplexer> {name}")
 
-        print(f"  bits {bits}")
-        print(f"  input {None}")
-        print(f"  output {None}")
+        # i, ii, k = 0, ceil(ln(m)/ln(2)), 0
+        # for a in self.A:
+        #     for j, b in enumerate(a.state):
+        #         if i % n == 0: print(f"  set{i//n}")
+        #         print(f"    @{i:0{ii}b} -> {a.name}[{j}] = {b}")
+        #         i += 1
+
+        print(f"{'':2}input blocks:")
+        i, ii, k = 0, ceil(ln(m)/ln(2)), 0
+        for a in self.A:
+            for j, b in enumerate(a.state):
+                if i % n == 0: print(f"{'':4}@{i//n}:")
+                print(f"{'':6}{a.port.parent.name}_{a.port.name}[{a.subset[j]}]={b}")
+                i += 1
+
+        print(f"  address={adrstr[::-1]}")
+        print(f"  data={datstr[::-1]}")
+        print(f"  Q={state[::-1]}")
 
         # done
         return
