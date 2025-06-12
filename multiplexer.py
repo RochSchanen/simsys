@@ -67,7 +67,9 @@ class multiplexer(logic_device):
         # done
         return
 
-    def display(self):
+    def display(self, tab = None):
+        # build tab
+        t = f"{'':{4*tab}}"
 
         name = self.name
 
@@ -77,27 +79,18 @@ class multiplexer(logic_device):
         n , nn, m = len(state), 1<<len(adrstr), len(datstr)
 
         # display
-        print(f"<multiplexer> {name}")
-
-        # i, ii, k = 0, ceil(ln(m)/ln(2)), 0
-        # for a in self.A:
-        #     for j, b in enumerate(a.state):
-        #         if i % n == 0: print(f"  set{i//n}")
-        #         print(f"    @{i:0{ii}b} -> {a.name}[{j}] = {b}")
-        #         i += 1
-
-        print(f"{'':2}input blocks:")
+        print()
+        print(f"{t}<multiplexer> {name}")
+        print(f"{t}{'':2}input blocks:")
         i, ii, k = 0, ceil(ln(m)/ln(2)), 0
         for a in self.A:
             for j, b in enumerate(a.state):
-                if i % n == 0: print(f"{'':4}@{i//n}:")
-                print(f"{'':6}{a.port.parent.name}_{a.port.name}[{a.subset[j]}]={b}")
+                if i % n == 0: print(f"{t}{'':4}@{i//n}:")
+                print(f"{t}{'':6}{a.port.parent.name}_{a.port.name}[{a.subset[j]}]={b}")
                 i += 1
-
-        print(f"  address={adrstr[::-1]}")
-        print(f"  data={datstr[::-1]}")
-        print(f"  Q={state[::-1]}")
-
+        print(f"{t}  address={adrstr[::-1]}")
+        print(f"{t}  table={datstr[::-1]}")
+        print(f"{t}  output={state[::-1]}")
         # done
         return
 

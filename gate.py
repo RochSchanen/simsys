@@ -54,7 +54,7 @@ class _gate(logic_device):
         # done
         return
 
-    def display(self):
+    def display(self, tab):
         # get name
         name = self.name
         # get configuration
@@ -180,7 +180,7 @@ class gate_not(_gate):
         # done
         return
 
-    def display(self):
+    def display(self, tab):
         # get name
         name = self.name
         # get configuration

@@ -71,7 +71,7 @@ class counter(logic_device):
         # done
         return
 
-    def display(self):
+    def display(self, tab):
         # get name
         name = self.name
         # get configuration

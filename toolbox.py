@@ -15,7 +15,7 @@ EOL, SPC, NUL, TAB = f'\n', f' ', f'', f'\t'
 # bit representation
 LOW, HGH, UKN = f'0', f'1', f'U'
 
-# load table parsing symbols
+# load table parsing symbols (local symbols)
 _COM, _SEP = f'#', f'='
 
 ######################################################################
@@ -53,6 +53,7 @@ def random_bits(bits = 1, block = 8):
 ######################################################################
 ###                                                       STARTUP_BITS
 ######################################################################
+# allow for a string of behav char to individualise start up behaviour
 
 def startup_bits(bits = 1, behav = 'U'):
     return {
@@ -106,6 +107,7 @@ def load_table(fp):
             # only the least significant bit are kept
             # the most significant bits exceeding the
             # value of 'bits' are simply ignored
+            # the bits are stored in reversed order
             table += f'{int(word, base):0{bits}b}'[::-1][:bits]
     # done
     return table, bits

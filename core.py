@@ -15,7 +15,14 @@ class logic_port():
     signal_counter = 0
 
     # constructor
-    def __init__(self, parent, name = None, bits = None, port = None, subset = None, behav = 'U'):
+    def __init__(self,
+            parent,
+            name = None,
+            bits = None,
+            port = None,
+            subset = None,
+            behav = 'U'
+            ):
         # record parent
         self.parent = parent
         # make signal name
@@ -104,13 +111,23 @@ class logic_device():
     def start(self):
         pass        
 
-    def add_input_port(self, port, name = None, subset = None):
+    def add_input_port(self,
+            port,
+            name = None,
+            subset = None,
+            ):
         name = name_duplicate(self.inputs, name)
         new_port = logic_port(self, name, None, port, subset)
         self.inputs.append(new_port)
         return new_port
 
-    def add_output_port(self, bits, name = None, port = None, subset = None, behav = 'U'):
+    def add_output_port(self,
+            bits,
+            name = None,
+            port = None,
+            subset = None,
+            behav = 'U',
+            ):
         name = name_duplicate(self.outputs, name)
         new_port = logic_port(self, name, bits, port, subset, behav)
         self.outputs.append(new_port)
@@ -159,7 +176,7 @@ class logic_device():
         return export_string
 
     # device specific
-    def display(self):
+    def display(self, tab = None):
         pass
 
 ######################################################################
@@ -191,7 +208,7 @@ class logic_system(logic_device):
         # done
         return
 
-    def add_module(self, device, t = 0):
+    def add_module(self, device, t):
         # setup alignment
         align = TAB*t
         # skip unnamed port
@@ -208,7 +225,7 @@ class logic_system(logic_device):
         # done
         return
 
-    def add_signal(self, device, port, t = 0):
+    def add_signal(self, device, port, t):
         # setup alignment
         align = TAB*t
         # skip unnamed port
@@ -258,16 +275,10 @@ class logic_system(logic_device):
         return
 
     def display(self):
-        for d in self.devices: d.display()
+        print(f"<logic system>:")
+        for d in self.devices: d.display(1)
         # done
         return
-
-######################################################################
-#                                                    FIXED VALUE PORTS
-######################################################################
-
-# VCC = logic_port('VCC', 1, None, None, HGH)
-# GND = logic_port('GND', 1, None, None, LOW)
 
 ######################################################################
 #                                                                 TEST

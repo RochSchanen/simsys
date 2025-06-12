@@ -14,9 +14,10 @@
 
 **to do list**
 
+    + update all display() methods
+    + re-introduce generic naming of devices.
     + add display header in the toolbox
     + add export flag set by default instead of using names.
-    + re-introduce generic naming of devices.
     + add parallel, serial load to counter
     + added delays for wires and devices
     + memory, ALU, processor
