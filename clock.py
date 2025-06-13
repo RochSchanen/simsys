@@ -8,9 +8,9 @@
 '''
     the clock device has one single output and no input. the output
     value depends only on the time elapse since the start of the
-    simulation. 
+    simulation.
 
-    the clock behaviour is defined by the following parameters: 
+    the clock behaviour is defined by the following parameters:
     - the "period" in ns is the inverse of the frequency)
     - the phase "shift" in ns is the delay before the clock rise
     - the "width" in ns is the pulse length before the clock fall
@@ -29,20 +29,21 @@ from toolbox import *
 from core import logic_device
 
 ######################################################################
-###                                                              CLOCK
+#                                                                CLOCK
 ######################################################################
+
 
 class clock(logic_device):
 
     def __init__(
             self,
-            period = 20,    # clock period: 20 ns, 50 MHz
-            shift  = 10,    # phase shift : 10 ns, half period
-            width  = 10,    # pulse width : 10 ns, symmetrical
-            count  = None,  # number of pulses: None is unlimited
-            name   = None,  # device name : None is no export
-            behav  = 'U',   # use 'I' for immediate update 
-            ):
+            period=20,   # clock period: 20 ns, 50 MHz
+            shift=10,    # phase shift : 10 ns, half period
+            width=10,    # pulse width : 10 ns, symmetrical
+            count=None,  # number of pulses: None is unlimited
+            name=None,   # device name : None is no export
+            behav='U',   # use 'I' for immediate update
+    ):
         # call parent class constructor
         logic_device.__init__(self, name)
         # record configuration
@@ -52,7 +53,7 @@ class clock(logic_device):
             self.Q = self.add_output_port(1, "Q")
             self.update(0)
             # done
-            return        
+            return
         # simply instantiate output ports
         self.Q = self.add_output_port(1, "Q", None, None, behav)
         # done
@@ -64,12 +65,12 @@ class clock(logic_device):
         # compute phase
         phase = (timeStamp - shift) % period
         # unlimited pulse train
-        if count == None:
+        if count is None:
             # update outputs values
             self.Q.set([LOW, HGH][phase < width])
             return
         # pulse train completed
-        if count*period > timeStamp:
+        if count * period > timeStamp:
             # update outputs values
             self.Q.set([LOW, HGH][phase < width])
             return
@@ -92,6 +93,7 @@ class clock(logic_device):
         print(f"  value : {value}")
         return
 
+
 ######################################################################
 #                                                                 TEST
 ######################################################################
@@ -101,7 +103,7 @@ if __name__ == "__main__":
     from core import logic_system
 
     ls = logic_system()
-    ls.add(clock(name = 'clock'))
+    ls.add(clock(name='clock'))
     ls.display()
     ls.open("./export.vcd")
     ls.run_until(200)

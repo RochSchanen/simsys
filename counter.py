@@ -2,7 +2,7 @@
 # content: counter
 # created: 2021 March 14 Sunday
 # modified: 2025 May 31 Saturday
-# modification: update to match the core.py update 
+# modification: update to match the core.py update
 # author: Roch Schanen
 
 '''
@@ -14,22 +14,28 @@
     is applied by clearing all the bits with weight larger than 2^n-1.
 
     optional inputs can be added to further control the counter. the counter
-    can be cleared at any time by using the asynchronous port labelled "clr". 
+    can be cleared at any time by using the asynchronous port labelled "clr".
 '''
 
 from toolbox import *
 from core import logic_device
 
 ######################################################################
-###                                                              CLOCK
+#                                                                CLOCK
 ######################################################################
+
 
 class counter(logic_device):
 
     clr = None
     clk = None
 
-    def __init__(self, bits = 4, name = None, behav = 'U'):
+    def __init__(
+            self,
+            bits=4,
+            name=None,
+            behav='U'
+    ):
         # call Device class constructor
         logic_device.__init__(self, name)
         # record configuration
@@ -39,12 +45,12 @@ class counter(logic_device):
         # done
         return
 
-    def add_clk(self, port, subset = None):
+    def add_clk(self, port, subset=None):
         self.clk = self.add_input_port(port, "clk", subset)
         # done
         return
 
-    def add_clr(self, port, subset = None):
+    def add_clr(self, port, subset=None):
         self.clr = self.add_input_port(port, "clr", subset)
         # done
         return
@@ -62,7 +68,7 @@ class counter(logic_device):
         if self.clk:
             if self.clk.rising:
                 # get incremented state
-                n = int(self.Q.get()[::-1], 2) + 1 
+                n = int(self.Q.get()[::-1], 2) + 1
                 # make n string, cut-off to keep LSB(bits) only
                 newvalue = f'{n:0{bits}b}'[-bits:]
                 # update output value
@@ -91,6 +97,7 @@ class counter(logic_device):
         print(f"  value {value}")
         return
 
+
 ######################################################################
 #                                                                 TEST
 ######################################################################
@@ -101,9 +108,9 @@ if __name__ == "__main__":
     from clock import clock
 
     ls = logic_system()
-    clk  = ls.add(clock(name = 'clock'))
-    rst  = ls.add(clock(40, 35, 5, 1, name = 'reset'))
-    cnt = ls.add(counter(name = 'counter'))
+    clk = ls.add(clock(name='clock'))
+    rst = ls.add(clock(40, 35, 5, 1, name='reset'))
+    cnt = ls.add(counter(name='counter'))
     cnt.add_clk(clk.Q)
     cnt.add_clr(rst.Q)
     ls.display()

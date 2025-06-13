@@ -5,7 +5,7 @@
 # modification: update to match the core.py update
 # author: Roch Schanen
 
-''' 
+'''
     the ROM device has one set of inputs ports, the address,
     and one output port, the data.
 
@@ -37,14 +37,14 @@
 
     the ROM output is updated as soon as the input address is
     updated.
-    
+
     if the address contains a single 'U', the all of the output
     bits are set to 'U'.
 
     The startup bit values are always 'U'.
 
     to load a table from a file, use the load_table() function
-    from the toolbox module. 
+    from the toolbox module.
 '''
 
 from toolbox import *
@@ -52,31 +52,33 @@ from core import logic_device
 from numpy import log as ln
 from math import ceil
 
-_DISPLAY_MAX = 80 # maximum characters per lines for table display
+_DISPLAY_MAX = 80  # maximum characters per lines for table display
 
 ######################################################################
-###                                                                ROM
+#                                                                  ROM
 ######################################################################
 # the default used is the NAND table with two bit inputs
 # another more relevant default table could be used instead.
 
+
 class rom(logic_device):
 
-    def __init__(self,
-            table   = '1110', # the table is always stored as a binary string
-            bits    =     1 , # the table is subdivided in words of length 'bits'
-            name    =  None , # None means no export
-            filling =    'U', # filling mode for data padding
-            ):
+    def __init__(
+            self,
+            table='1110',   # the table is always stored as a binary string
+            bits=1,        # the table is subdivided in words of length 'bits'
+            name=None,     # None means no export
+            filling='U',    # filling mode for data padding
+    ):
         # call parent class constructor
         logic_device.__init__(self, name)
         # find number of words
-        words = ceil(len(table)/bits)
+        words = ceil(len(table) / bits)
         # express the nn in powers of 2
-        nn = ceil(ln(words)/ln(2))
+        nn = ceil(ln(words) / ln(2))
         # compute expansion length
-        n = (2**nn-words)*bits
-        # expand the table up to 2^nn                
+        n = (2**nn - words) * bits
+        # expand the table up to 2^nn
         table += startup_bits(n, filling)
         # record configuration
         self.configuration = nn, bits, table
@@ -85,8 +87,8 @@ class rom(logic_device):
         # done
         return
 
-    def add_address(self, port, subset = None):
-        newport = self.add_input_port(port, f"A", subset)
+    def add_address(self, port, subset=None):
+        self.add_input_port(port, f"A", subset)
         # done
         return
 
@@ -97,12 +99,12 @@ class rom(logic_device):
         address_string = NUL.join([p.get() for p in self.inputs])
         # check for un-intialised bit(s)
         if 'U' in address_string:
-            self.Q.set(UKN*bits)
+            self.Q.set(UKN * bits)
             return
         # convert string to integer
         address_value = int(address_string[::-1], 2)
         # update output value
-        self.Q.set(table[address_value*bits:(address_value+1)*bits])
+        self.Q.set(table[address_value * bits:(address_value + 1) * bits])
         # done
         return
 
@@ -117,7 +119,7 @@ class rom(logic_device):
         print(f"<read only memory> {name}")
         print(f"  length {2**nn}x{bits}")
         print(f"  value {value}")
-        s =   f"  table "
+        s = f"  table "
         # alignment
         align = len(s)
         # scan through table

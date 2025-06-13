@@ -6,7 +6,7 @@
 from numpy.random import randint
 
 ######################################################################
-###                                                            SYMBOLS
+#                                                              SYMBOLS
 ######################################################################
 
 # general strings
@@ -19,12 +19,14 @@ LOW, HGH, UKN = f'0', f'1', f'U'
 _COM, _SEP = f'#', f'='
 
 ######################################################################
-###                                                     NAME_DUPLICATE
+#                                                       NAME_DUPLICATE
 ######################################################################
+
 
 def name_duplicate(objects, name):
     # bypass when no name
-    if name is None: return None
+    if name is None:
+        return None
     # build the list of names
     names = [o.name for o in objects]
     # initialise (start counting from one)
@@ -37,10 +39,11 @@ def name_duplicate(objects, name):
     return newname
 
 ######################################################################
-###                                                        RANDOM_BITS
+#                                                          RANDOM_BITS
 ######################################################################
 
-def random_bits(bits = 1, block = 8):
+
+def random_bits(bits=1, block=8):
     # initialise
     n, table = 0, NUL
     # build enough random bits
@@ -51,27 +54,29 @@ def random_bits(bits = 1, block = 8):
     return table[:bits]
 
 ######################################################################
-###                                                       STARTUP_BITS
+#                                                         STARTUP_BITS
 ######################################################################
 # allow for a string of behav char to individualise start up behaviour
 
-def startup_bits(bits = 1, behav = 'U'):
+
+def startup_bits(bits=1, behav='U'):
     return {
-        '0': LOW*bits,
-        '1': HGH*bits,
-        'U': UKN*bits,
+        '0': LOW * bits,
+        '1': HGH * bits,
+        'U': UKN * bits,
         'R': random_bits(bits),
-        }[behav]
+    }[behav]
 
 ######################################################################
-###                                                         LOAD_TABLE
+#                                                           LOAD_TABLE
 ######################################################################
+
 
 def load_table(fp):
     # initialise
     table, base, bits, line_number = NUL, 16, 8, 0
     # open file
-    fh = open(fp,'r')
+    fh = open(fp, 'r')
     # read file line by line
     new_line = fh.readline()
     while new_line:
@@ -81,12 +86,14 @@ def load_table(fp):
         new_line = fh.readline()
         # update line number
         line_number += 1
-        # skip empty lines     
-        if line is NUL: continue
+        # skip empty lines
+        if line is NUL:
+            continue
         # strip heading spaces
         line = line.lstrip(SPC)
         # skip comment lines
-        if line[0] == _COM: continue
+        if line[0] == _COM:
+            continue
         # parse BITS
         if line[:4] == 'BITS':
             (key, value) = line.split(_SEP)
@@ -98,8 +105,8 @@ def load_table(fp):
             base = {
                 'HEX': 16,
                 'DEC': 10,
-                'BIN':  2,
-                }[value.strip()]
+                'BIN': 2,
+            }[value.strip()]
             continue
         # append data to the table in binary form
         # words separators is expected to be spaces
@@ -113,19 +120,56 @@ def load_table(fp):
     return table, bits
 
 ######################################################################
+#                                                               HEADER
+######################################################################
+
+
+def header():
+
+    from os.path import realpath
+    from sys import argv
+
+    # get main script content
+    fp = realpath(argv[0])  # file path
+    fh = open(fp, 'r')      # file handle
+    ft = fh.read()          # file text
+    fh.close()              # done
+    # print lines while begin with #
+    lines = ft.split('\n')
+    for line in lines:
+        if line[:2] == "#!":
+            continue
+        if line.strip() == "":
+            break
+        if not line[0] == "#":
+            break
+        print(line)
+    # show versions
+    from sys import version as sys_version
+    print(f"using Python version {sys_version.split(' ')[0]}")
+    # from pyvigi import version
+    print(f"run script SimSys.py version 0.0")
+    # done
+    return
+
+######################################################################
 #                                                                  LUT
 ######################################################################
 # inputs are ordered with the least significant bit first
 
+
 def lut(table, *inputs):
-    A = [NUL.join(I) for I in zip(*(inputs[::-1]))]
+    A = [NUL.join(i) for i in zip(*(inputs[::-1]))]
     return NUL.join([UKN if UKN in a else table[int(a, 2)] for a in A])
 
 ######################################################################
 #                                                                 TEST
 ######################################################################
 
+
 if __name__ == "__main__":
+
+    header()
 
     TESTS = [
         # 'name_duplicate',
@@ -133,7 +177,7 @@ if __name__ == "__main__":
         # 'startup_bits',
         # 'load_table',
         # 'lut',
-        ]
+    ]
 
     if 'lut' in TESTS:
 
@@ -174,14 +218,14 @@ if __name__ == "__main__":
         from rom import rom
 
         ls = logic_system()
-        clk = ls.add(clock(name = "clock"))
-        rst = ls.add(clock(20, 15, 5, 1, name = "reset"))
-        cnt = ls.add(counter(2, name = "counter"))
+        clk = ls.add(clock(name="clock"))
+        rst = ls.add(clock(20, 15, 5, 1, name="reset"))
+        cnt = ls.add(counter(2, name="counter"))
         cnt.add_clk(clk.Q)
         cnt.add_clr(rst.Q)
-        gate1 = ls.add(rom(*load_table(f'and.rom'), name = 'AND'))
+        gate1 = ls.add(rom(*load_table(f'and.rom'), name='AND'))
         gate1.add_address(cnt.Q)
-        gate2 = ls.add(rom(*load_table(f'eor.rom'), name = 'EOR'))
+        gate2 = ls.add(rom(*load_table(f'eor.rom'), name='EOR'))
         gate2.add_address(cnt.Q)
         ls.display()
         ls.open("./export.vcd")
@@ -206,22 +250,22 @@ if __name__ == "__main__":
 
     if 'name_duplicate' in TESTS:
 
-        # define a test class with the name property 
+        # define a test class with the name property
         class objectclass():
             def setname(self, name):
                 self.name = name
 
         # declare a empty list of objects
-        O = []
+        OBJ = []
         # instantiate 8 objects with same generic name 'A'
         for i in range(8):
             # create new object
-            o = objectclass()
+            obj = objectclass()
             # use name_duplicate() to build a new name
-            n = name_duplicate(O, "A")
+            n = name_duplicate(OBJ, "A")
             # set object name using the new name
-            o.setname(n)
+            obj.setname(n)
             # append new object to list
-            O.append(o)
+            OBJ.append(obj)
         # print the name for each object
-        print([o.name for o in O])
+        print([obj.name for obj in OBJ])
